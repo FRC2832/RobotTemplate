@@ -4,7 +4,13 @@
 
 package frc.robot;
 
+import org.livoniawarriors.swerve.DriveXbox;
+import org.livoniawarriors.swerve.SwerveDriveSim;
+import org.livoniawarriors.swerve.SwerveDriveTrain;
+
+import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.RobotController;
+import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
@@ -18,7 +24,12 @@ import edu.wpi.first.wpilibj2.command.button.Trigger;
  */
 public class RobotContainer {
     /** The container for the robot. Contains subsystems, OI devices, and commands. */
+    private SwerveDriveTrain swerveDrive;
+    private XboxController driverController;
+
     public RobotContainer() {
+        driverController = new XboxController(0);
+
         String serNum = RobotController.getSerialNumber();
         SmartDashboard.putString("Serial Number", serNum);
         //known Rio serial numbers:
@@ -27,6 +38,7 @@ public class RobotContainer {
 
         if (Robot.isSimulation() || (serNum.equals("031b525b"))) {
             //either buzz or simulation
+            swerveDrive = new SwerveDriveTrain(new SwerveDriveSim(), () -> Rotation2d.fromDegrees(0));
         } else {
             //competition robot
         }
@@ -42,7 +54,8 @@ public class RobotContainer {
      * joysticks}.
      */
     public void configureBindings() {
-
+        //setup default commands that are used for driving
+        swerveDrive.setDefaultCommand(new DriveXbox(swerveDrive, driverController));
     }
 
     /**

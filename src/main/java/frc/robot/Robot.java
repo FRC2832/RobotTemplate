@@ -7,6 +7,9 @@ package frc.robot;
 import org.livoniawarriors.GitVersion;
 import org.livoniawarriors.Logger;
 
+import com.pathplanner.lib.util.PPLibTelemetry;
+
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -47,6 +50,11 @@ public class Robot extends TimedRobot {
          * should never see Brownout Protection again.
          */
         RobotController.setBrownoutVoltage(3);
+
+        //turn off hot reload at the competition.
+        if (DriverStation.isFMSAttached()) {
+            PPLibTelemetry.enableCompetitionMode();
+        }
 
         // Instantiate our RobotContainer.  This will perform all our button bindings, and put our
         // autonomous chooser on the dashboard.
@@ -105,10 +113,10 @@ public class Robot extends TimedRobot {
             m_autonomousCommand.cancel();
         }
 
+        //this clears all the old polled triggers
+        CommandScheduler.getInstance().getActiveButtonLoop().clear();
         //since we sometimes switch configurations based on controller type, 
         //reset the bindings
-        //  this clears all the old polled triggers
-        CommandScheduler.getInstance().getActiveButtonLoop().clear();
         m_robotContainer.configureBindings();
     }
 

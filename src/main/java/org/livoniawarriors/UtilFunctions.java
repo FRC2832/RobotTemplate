@@ -1,6 +1,10 @@
 package org.livoniawarriors;
 
 import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.networktables.DoublePublisher;
+import edu.wpi.first.networktables.DoubleSubscriber;
+import edu.wpi.first.networktables.DoubleTopic;
+import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj.Preferences;
 
 public class UtilFunctions {
@@ -47,5 +51,42 @@ public class UtilFunctions {
             Preferences.initDouble(key, backup);
             return backup;
         }
+    }
+
+    /**
+     * This uses the Preferences API to save settings over power cycles.
+     * This is different in that you don't have to set the default value, it will set it for you.
+     * @param key The parameter you want to get (slashes are allowed)
+     * @param backup The value to use if the key is missing
+     * @return The value in NetworkTables if it exists, the backup if missing
+     */
+    public static boolean getSetting(String key, boolean backup) {
+        if(Preferences.containsKey(key)) {
+            //key exists, return the value
+            return Preferences.getBoolean(key, backup);
+        } else {
+            //key missing, set default
+            Preferences.initBoolean(key, backup);
+            return backup;
+        }
+    }
+
+    /**
+     * This creates a NT subscriber so we don't have to keep quering the key in the table to get the value.
+     * It will locate the key in the Preferences table still.
+     * @param key The parameter you want to get (slashes are allowed)
+     * @param backup The value to use if the key is missing
+     * @return The value in NetworkTables if it exists, the backup if missing
+     */
+    public static DoubleSubscriber getSettingSub(String key, double backup) {
+        DoubleTopic topic = NetworkTableInstance.getDefault().getDoubleTopic("/Preferences/" + key);
+        DoublePublisher pub = topic.publish();
+        pub.setDefault(backup);
+        DoubleSubscriber sub = topic.subscribe(backup);
+        if(!sub.exists()) {
+            pub.set(backup);
+        }
+        topic.setPersistent(true);
+        return sub;
     }
 }

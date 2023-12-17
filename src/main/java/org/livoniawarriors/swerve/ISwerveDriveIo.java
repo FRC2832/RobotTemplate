@@ -8,11 +8,10 @@ import edu.wpi.first.math.kinematics.SwerveModuleState;
 public  interface ISwerveDriveIo {
     void updateInputs();
     Translation2d[] getCornerLocations();
+    String[] getModuleNames();
 
     void setTurnMotorBrakeMode(boolean brakeOn);
     void setDriveMotorBrakeMode(boolean brakeOn);
-
-    int GetNumWheels();
     
     /**
      * Returns the CANcoder absolute angle of the swerve corner in degrees
