@@ -1,11 +1,15 @@
 package org.livoniawarriors;
 
+import java.lang.reflect.Field;
+
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.networktables.DoublePublisher;
 import edu.wpi.first.networktables.DoubleSubscriber;
 import edu.wpi.first.networktables.DoubleTopic;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj.Preferences;
+import edu.wpi.first.wpilibj.RobotBase;
+import edu.wpi.first.wpilibj.TimedRobot;
 
 public class UtilFunctions {
     /**
@@ -88,5 +92,25 @@ public class UtilFunctions {
         }
         topic.setPersistent(true);
         return sub;
+    }
+
+    /**
+     * This function adds a periodic function to the schedule.  This will run after the main loop finishes.
+     * @param callback Function to run
+     * @param periodSeconds How often to run the function in seconds
+     * @param offserSeconds What offset to run this function at
+     * @return
+     */
+    public static boolean addPeriodic(Runnable callback, double periodSeconds, double offserSeconds) {
+        try {
+            Field field = RobotBase.class.getDeclaredField("m_robotCopy");
+            field.setAccessible(true);
+            TimedRobot returnObject = (TimedRobot)field.get(RobotBase.class);
+            returnObject.addPeriodic(callback, periodSeconds, offserSeconds);
+            return true;
+        } catch (Exception e) {
+            //don't do anything, we just return false that it didn't schedule
+        } 
+        return false;
     }
 }
