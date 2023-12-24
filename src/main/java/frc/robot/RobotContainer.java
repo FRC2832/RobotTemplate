@@ -5,6 +5,7 @@
 package frc.robot;
 
 import org.livoniawarriors.odometry.Odometry;
+import org.livoniawarriors.odometry.Pigeon2Gyro;
 import org.livoniawarriors.odometry.SimSwerveGyro;
 import org.livoniawarriors.swerve.DriveXbox;
 import org.livoniawarriors.swerve.SwerveDriveSim;
@@ -49,6 +50,7 @@ public class RobotContainer {
             odometry.setGyroHardware(new SimSwerveGyro(swerveDrive));
         } else {
             //competition robot
+            odometry.setGyroHardware(new Pigeon2Gyro(0));
         }
         
         odometry.setSwerveDrive(swerveDrive);
