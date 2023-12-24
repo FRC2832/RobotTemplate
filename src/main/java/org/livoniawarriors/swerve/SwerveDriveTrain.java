@@ -184,7 +184,7 @@ public class SwerveDriveTrain extends SubsystemBase {
         swerveTargets = requestStates;
         for(int i=0; i<requestStates.length; i++) {
             if(optimize) {
-                requestStates = optomizeSwerve(requestStates, currentState);
+                requestStates = optimizeSwerve(requestStates, currentState);
             }
                 
             var volts = -turnPid[i].calculate(swerveStates[i].angle.getRadians(),requestStates[i].angle.getRadians());
