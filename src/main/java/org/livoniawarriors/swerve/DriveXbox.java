@@ -4,7 +4,6 @@ import org.livoniawarriors.UtilFunctions;
 
 import edu.wpi.first.networktables.DoubleSubscriber;
 import edu.wpi.first.wpilibj.XboxController;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 
 /**
@@ -29,7 +28,6 @@ public class DriveXbox extends Command {
 
     @Override
     public void initialize() {
-        SmartDashboard.putNumber("Turtle Turn Speed", 4);
         drive.SwerveDrive(0, 0, 0, false);
     }
 
