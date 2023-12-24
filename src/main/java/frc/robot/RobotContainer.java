@@ -4,11 +4,11 @@
 
 package frc.robot;
 
+import org.livoniawarriors.odometry.Odometry;
 import org.livoniawarriors.swerve.DriveXbox;
 import org.livoniawarriors.swerve.SwerveDriveSim;
 import org.livoniawarriors.swerve.SwerveDriveTrain;
 
-import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
@@ -36,9 +36,13 @@ public class RobotContainer {
         //031b525b = buzz
         //03064db7 = big buzz
 
-        if (Robot.isSimulation() || (serNum.equals("031b525b"))) {
+        //subsystems used in all robots
+        Odometry odometry = new Odometry();
+
+        //build the robot based on the Rio ID of the robot
+        if (Robot.isSimulation() || (serNum.equals("031b525b")) || (serNum.equals("03064db7"))) {
             //either buzz or simulation
-            swerveDrive = new SwerveDriveTrain(new SwerveDriveSim(), () -> Rotation2d.fromDegrees(0));
+            swerveDrive = new SwerveDriveTrain(new SwerveDriveSim(), odometry::getGyroRotation);
         } else {
             //competition robot
         }
