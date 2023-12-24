@@ -79,9 +79,9 @@ public class SwerveDriveTrain extends SubsystemBase {
         moduleNames = hardware.getModuleNames();
 
         /** How fast we want the driver to go during normal operation in m/s */
-        driverMaxSpeed = UtilFunctions.getSettingSub("Swerve Drive/Max Driver Speed_mps", 3);
+        driverMaxSpeed = UtilFunctions.getSettingSub("Swerve Drive/Max Driver Speed_meter_sec", 3);
         /** How fast we want the driver to turn during normal operation in deg/s */
-        driverMaxOmega = UtilFunctions.getSettingSub("Swerve Drive/Max Driver Omega_dps", 325);   //1.8 * Pi rad/sec
+        driverMaxOmega = UtilFunctions.getSettingSub("Swerve Drive/Max Driver Omega_deg_sec", 325);   //1.8 * Pi rad/sec
     }
     
     @Override
