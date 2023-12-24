@@ -21,7 +21,6 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 public class Odometry extends SubsystemBase {
     public static final double FIELD_LENGTH_METERS = 16.542;
     public static final double FIELD_WIDTH_METERS = 8.014;
-    private boolean PLOT_SWERVE_CORNERS = false;
     
     IGyroHardware hardware;
     SwerveDriveOdometry odometry;
@@ -32,6 +31,7 @@ public class Odometry extends SubsystemBase {
     private Field2d field;
     private Translation2d[] swervePositions;
     private BooleanSubscriber resetPos;
+    private BooleanSubscriber plotCorners;
 
     public Odometry() {
         super();
@@ -41,6 +41,7 @@ public class Odometry extends SubsystemBase {
 
         field = new Field2d();
         resetPos = UtilFunctions.getNtSub("/Odometry/Reset Position", false);
+        plotCorners = UtilFunctions.getSettingSub("/Odometry/Plot Swerve Corners", false);
 
         SmartDashboard.putData("Field", field);
         Logger.RegisterSensor("Gyro Yaw", this::getGyroAngle);
@@ -72,19 +73,22 @@ public class Odometry extends SubsystemBase {
             robotPose = odometry.update(heading, states);
             field.setRobotPose(robotPose);
 
-            if(PLOT_SWERVE_CORNERS) {
+            Pose2d[] swervePoses;
+            if(plotCorners.get()) {
                 // Update the poses for the swerveModules. Note that the order of rotating the
                 // position and then adding the translation matters
-                var modulePoses = new Pose2d[swervePositions.length];
+                swervePoses = new Pose2d[swervePositions.length];
                 for (int i = 0; i < swervePositions.length; i++) {
                     Translation2d modulePositionFromChassis = swervePositions[i].rotateBy(heading).plus(robotPose.getTranslation());
 
                     // Module's heading is it's angle relative to the chassis heading
-                    modulePoses[i] = new Pose2d(modulePositionFromChassis,
+                    swervePoses[i] = new Pose2d(modulePositionFromChassis,
                         states[i].angle.plus(robotPose.getRotation()));
                 }
-                field.getObject("Swerve Modules").setPoses(modulePoses);
+            } else {
+                swervePoses = new Pose2d[0];
             }
+            field.getObject("Swerve Modules").setPoses(swervePoses);
         }
 
         //if the user requests a reset of position, do it

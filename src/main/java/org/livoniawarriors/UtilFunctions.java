@@ -99,6 +99,25 @@ public class UtilFunctions {
 
     /**
      * This creates a NT subscriber so we don't have to keep querying the key in the table to get the value.
+     * It will locate the key in the Preferences table still.
+     * @param key The parameter you want to get (slashes are allowed)
+     * @param backup The value to use if the key is missing
+     * @return The subscriber to get values from
+     */
+    public static BooleanSubscriber getSettingSub(String key, boolean backup) {
+        BooleanTopic topic = NetworkTableInstance.getDefault().getBooleanTopic("/Preferences/" + key);
+        BooleanPublisher pub = topic.publish();
+        pub.setDefault(backup);
+        BooleanSubscriber sub = topic.subscribe(backup);
+        if(!sub.exists()) {
+            pub.set(backup);
+        }
+        topic.setPersistent(true);
+        return sub;
+    }
+
+    /**
+     * This creates a NT subscriber so we don't have to keep querying the key in the table to get the value.
      * @param key The parameter you want to get (slashes are allowed)
      * @param backup The value to use if the key is missing
      * @return The subscriber to get values from
