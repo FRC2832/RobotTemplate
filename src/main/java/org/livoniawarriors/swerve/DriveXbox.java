@@ -35,11 +35,20 @@ public class DriveXbox extends Command {
 
     @Override
     public void execute() {
+        //driver clicked field reset stick
+        if (cont.getLeftBumperPressed()) {
+            drive.resetFieldOriented();
+        }
+
         var dead = deadband.get();
-        double xSpeed = UtilFunctions.deadband(cont.getLeftX(), dead);
-        double ySpeed = UtilFunctions.deadband(cont.getLeftY(), dead);
-        double turn   = UtilFunctions.deadband(cont.getRightX(), dead);
-        drive.SwerveDrive(xSpeed, ySpeed, turn);
+        double xSpeed = UtilFunctions.deadband(-cont.getLeftY(), dead);
+        double ySpeed = UtilFunctions.deadband(-cont.getLeftX(), dead);
+        double turn   = UtilFunctions.deadband(-cont.getRightX(), dead);
+        drive.SwerveDrive(
+            xSpeed * drive.getMaxDriverSpeed(), 
+            ySpeed * drive.getMaxDriverSpeed(), 
+            turn * drive.getMaxDriverOmega()
+        );
     }
 
     @Override

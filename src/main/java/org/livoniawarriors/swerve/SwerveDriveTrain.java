@@ -47,6 +47,7 @@ public class SwerveDriveTrain extends SubsystemBase {
     private double minSpeed;
     private double maxSpeed;
     private Rotation2d currentHeading;
+    private Rotation2d fieldOffset;
     private Supplier<Rotation2d> gyroSupplier;
     private boolean lastTeleop;
 
@@ -54,11 +55,12 @@ public class SwerveDriveTrain extends SubsystemBase {
     private DoubleSubscriber driverMaxOmega;
 
     public SwerveDriveTrain(ISwerveDriveIo hSwerveDriveIo, Supplier<Rotation2d> gyroSupplier) {
-        register();
+        super();
         this.hardware = hSwerveDriveIo;
         this.gyroSupplier = gyroSupplier;
         optimize = true;
         int numWheels = hardware.getCornerLocations().length;
+        fieldOffset = new Rotation2d();
 
         //initialize the corner locations
         kinematics = new SwerveDriveKinematics(hSwerveDriveIo.getCornerLocations());
@@ -109,6 +111,7 @@ public class SwerveDriveTrain extends SubsystemBase {
                 pid.reset();
             }
             gyroOffset = currentHeading.getDegrees();
+            fieldOffset = currentHeading;
         }
         lastTeleop = curTeleop;
 
@@ -135,7 +138,7 @@ public class SwerveDriveTrain extends SubsystemBase {
         }
 
         if (fieldOriented) {
-            speeds = ChassisSpeeds.fromFieldRelativeSpeeds(xSpeed, ySpeed, turn, currentHeading);
+            speeds = ChassisSpeeds.fromFieldRelativeSpeeds(xSpeed, ySpeed, turn, currentHeading.minus(fieldOffset));
         } else {
             speeds = new ChassisSpeeds(xSpeed, ySpeed, turn);
         }
@@ -252,13 +255,20 @@ public class SwerveDriveTrain extends SubsystemBase {
         return outputStates;
     }
 
-    
+    public void resetFieldOriented() {
+        fieldOffset = currentHeading;
+    }
+
     public SwerveDriveKinematics getKinematics() {
         return kinematics;
     }
    
-    public SwerveModulePosition[] getSwerveStates() {
+    public SwerveModulePosition[] getSwervePositions() {
         return swerveStates;
+    }
+
+    public SwerveModuleState[] getSwerveStates() {
+        return currentState;
     }
 
     public void setTurnMotorBrakeMode(boolean brakeOn) {
@@ -286,6 +296,6 @@ public class SwerveDriveTrain extends SubsystemBase {
     }
 
     public double getMaxDriverOmega() {
-        return driverMaxOmega.get();
+        return Math.toRadians(driverMaxOmega.get());
     }
 }

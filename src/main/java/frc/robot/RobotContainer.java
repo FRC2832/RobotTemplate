@@ -5,10 +5,13 @@
 package frc.robot;
 
 import org.livoniawarriors.odometry.Odometry;
+import org.livoniawarriors.odometry.SimSwerveGyro;
 import org.livoniawarriors.swerve.DriveXbox;
 import org.livoniawarriors.swerve.SwerveDriveSim;
 import org.livoniawarriors.swerve.SwerveDriveTrain;
 
+import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
@@ -43,9 +46,13 @@ public class RobotContainer {
         if (Robot.isSimulation() || (serNum.equals("031b525b")) || (serNum.equals("03064db7"))) {
             //either buzz or simulation
             swerveDrive = new SwerveDriveTrain(new SwerveDriveSim(), odometry::getGyroRotation);
+            odometry.setGyroHardware(new SimSwerveGyro(swerveDrive));
         } else {
             //competition robot
         }
+        
+        odometry.setSwerveDrive(swerveDrive);
+        odometry.setStartingPose(new Pose2d(1.92, 2.79, new Rotation2d(0)));
     }
 
     /**

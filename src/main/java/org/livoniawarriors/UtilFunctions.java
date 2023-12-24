@@ -3,6 +3,9 @@ package org.livoniawarriors;
 import java.lang.reflect.Field;
 
 import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.networktables.BooleanPublisher;
+import edu.wpi.first.networktables.BooleanSubscriber;
+import edu.wpi.first.networktables.BooleanTopic;
 import edu.wpi.first.networktables.DoublePublisher;
 import edu.wpi.first.networktables.DoubleSubscriber;
 import edu.wpi.first.networktables.DoubleTopic;
@@ -76,7 +79,7 @@ public class UtilFunctions {
     }
 
     /**
-     * This creates a NT subscriber so we don't have to keep quering the key in the table to get the value.
+     * This creates a NT subscriber so we don't have to keep querying the key in the table to get the value.
      * It will locate the key in the Preferences table still.
      * @param key The parameter you want to get (slashes are allowed)
      * @param backup The value to use if the key is missing
@@ -95,18 +98,35 @@ public class UtilFunctions {
     }
 
     /**
+     * This creates a NT subscriber so we don't have to keep querying the key in the table to get the value.
+     * @param key The parameter you want to get (slashes are allowed)
+     * @param backup The value to use if the key is missing
+     * @return The value in NetworkTables if it exists, the backup if missing
+     */
+    public static BooleanSubscriber getNtSub(String key, boolean backup) {
+        BooleanTopic topic = NetworkTableInstance.getDefault().getBooleanTopic(key);
+        BooleanPublisher pub = topic.publish();
+        pub.setDefault(backup);
+        BooleanSubscriber sub = topic.subscribe(backup);
+        if(!sub.exists()) {
+            pub.set(backup);
+        }
+        return sub;
+    }
+
+    /**
      * This function adds a periodic function to the schedule.  This will run after the main loop finishes.
      * @param callback Function to run
      * @param periodSeconds How often to run the function in seconds
-     * @param offserSeconds What offset to run this function at
+     * @param offsetSeconds What offset to run this function at
      * @return
      */
-    public static boolean addPeriodic(Runnable callback, double periodSeconds, double offserSeconds) {
+    public static boolean addPeriodic(Runnable callback, double periodSeconds, double offsetSeconds) {
         try {
             Field field = RobotBase.class.getDeclaredField("m_robotCopy");
             field.setAccessible(true);
             TimedRobot returnObject = (TimedRobot)field.get(RobotBase.class);
-            returnObject.addPeriodic(callback, periodSeconds, offserSeconds);
+            returnObject.addPeriodic(callback, periodSeconds, offsetSeconds);
             return true;
         } catch (Exception e) {
             //don't do anything, we just return false that it didn't schedule

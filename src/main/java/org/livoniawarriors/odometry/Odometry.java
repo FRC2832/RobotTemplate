@@ -1,6 +1,9 @@
 package org.livoniawarriors.odometry;
 
+import java.util.Optional;
+
 import org.livoniawarriors.Logger;
+import org.livoniawarriors.UtilFunctions;
 import org.livoniawarriors.swerve.SwerveDriveTrain;
 
 import edu.wpi.first.math.geometry.Pose2d;
@@ -8,24 +11,36 @@ import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.SwerveDriveOdometry;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
+import edu.wpi.first.networktables.BooleanSubscriber;
+import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 public class Odometry extends SubsystemBase {
+    public static final double FIELD_LENGTH_METERS = 16.542;
+    public static final double FIELD_WIDTH_METERS = 8.014;
     private boolean PLOT_SWERVE_CORNERS = false;
+    
     IGyroHardware hardware;
     SwerveDriveOdometry odometry;
     SwerveDriveTrain drive;
     Pose2d robotPose;
+    Pose2d startPose;
+    
     private Field2d field;
     private Translation2d[] swervePositions;
+    private BooleanSubscriber resetPos;
 
     public Odometry() {
         super();
         hardware = new BlankGyro();
-        robotPose = new Pose2d();
+        robotPose = new Pose2d(FIELD_LENGTH_METERS / 2, FIELD_WIDTH_METERS / 2, new Rotation2d());
+        startPose = new Pose2d(FIELD_LENGTH_METERS / 2, FIELD_WIDTH_METERS / 2, new Rotation2d());
+
         field = new Field2d();
+        resetPos = UtilFunctions.getNtSub("/Odometry/Reset Position", false);
 
         SmartDashboard.putData("Field", field);
         Logger.RegisterSensor("Gyro Yaw", this::getGyroAngle);
@@ -39,7 +54,7 @@ public class Odometry extends SubsystemBase {
     public void setSwerveDrive(SwerveDriveTrain drive) {
         this.drive = drive;
         swervePositions = drive.getCornerLocations();
-        odometry = new SwerveDriveOdometry(drive.getKinematics(), getGyroRotation(), drive.getSwerveStates());
+        odometry = new SwerveDriveOdometry(drive.getKinematics(), getGyroRotation(), drive.getSwervePositions());
     }
 
     public void setGyroHardware(IGyroHardware hardware) {
@@ -51,33 +66,67 @@ public class Odometry extends SubsystemBase {
     public void periodic() {
         hardware.updateHardware();
         Rotation2d heading = getGyroRotation();
-        SwerveModulePosition[] states = drive.getSwerveStates();
-        robotPose = odometry.update(heading, states);
-        field.setRobotPose(robotPose);
 
-        if(PLOT_SWERVE_CORNERS) {
-            // Update the poses for the swerveModules. Note that the order of rotating the
-            // position and then adding the translation matters
-            var modulePoses = new Pose2d[swervePositions.length];
-            for (int i = 0; i < swervePositions.length; i++) {
-                Translation2d modulePositionFromChassis = swervePositions[i].rotateBy(heading).plus(robotPose.getTranslation());
+        if(drive != null) {
+            SwerveModulePosition[] states = drive.getSwervePositions();
+            robotPose = odometry.update(heading, states);
+            field.setRobotPose(robotPose);
 
-                // Module's heading is it's angle relative to the chassis heading
-                modulePoses[i] = new Pose2d(modulePositionFromChassis,
-                    states[i].angle.plus(robotPose.getRotation()));
+            if(PLOT_SWERVE_CORNERS) {
+                // Update the poses for the swerveModules. Note that the order of rotating the
+                // position and then adding the translation matters
+                var modulePoses = new Pose2d[swervePositions.length];
+                for (int i = 0; i < swervePositions.length; i++) {
+                    Translation2d modulePositionFromChassis = swervePositions[i].rotateBy(heading).plus(robotPose.getTranslation());
+
+                    // Module's heading is it's angle relative to the chassis heading
+                    modulePoses[i] = new Pose2d(modulePositionFromChassis,
+                        states[i].angle.plus(robotPose.getRotation()));
+                }
+                field.getObject("Swerve Modules").setPoses(modulePoses);
             }
-            field.getObject("Swerve Modules").setPoses(modulePoses);
+        }
+
+        //if the user requests a reset of position, do it
+        if(resetPos.get()) {
+            resetPose(flipAlliance(startPose));
+            //turn off the request
+            resetPos.getTopic().publish().set(false);
         }
     }
 
+    /**
+     * Transforms a pose to the opposite alliance's coordinate system. (0,0) is
+     * always on the right corner of your alliance wall, so for 2023, the field
+     * elements are at different coordinates for each alliance.
+     * 
+     * @param poseToFlip pose to transform to the other alliance
+     * @return pose relative to the other alliance's coordinate system
+     */
+    public static Pose2d flipAlliance(Pose2d poseToFlip) {
+        Optional<Alliance> alliance = DriverStation.getAlliance();
+        if (alliance.isPresent() && alliance.get() == Alliance.Red) {
+            return poseToFlip.relativeTo(new Pose2d(
+                new Translation2d(FIELD_LENGTH_METERS, FIELD_WIDTH_METERS),
+                new Rotation2d(Math.PI)));
+        } else {
+            return poseToFlip;
+        }
+    }
+
+    public void setStartingPose(Pose2d pose) {
+        startPose = flipAlliance(pose);
+        resetPose(startPose);
+    }
+
     public void resetPose(Pose2d pose) {
-        odometry.resetPosition(getGyroRotation(), drive.getSwerveStates(), pose);
+        odometry.resetPosition(getGyroRotation(), drive.getSwervePositions(), pose);
     }
 
     public void resetHeading() {
         //reset the robot back to it's spot, just facing forward now
         Pose2d pose = new Pose2d(robotPose.getTranslation(),Rotation2d.fromDegrees(0));
-        odometry.resetPosition(getGyroRotation(), drive.getSwerveStates(), pose);
+        odometry.resetPosition(getGyroRotation(), drive.getSwervePositions(), pose);
     }
 
     public Pose2d getPose() {
