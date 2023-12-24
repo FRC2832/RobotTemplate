@@ -2,7 +2,6 @@ package org.livoniawarriors.swerve;
 
 import java.util.function.Supplier;
 
-import org.livoniawarriors.Logger;
 import org.livoniawarriors.UtilFunctions;
 
 import com.ctre.phoenix.motorcontrol.ControlMode;
@@ -31,7 +30,7 @@ public class SwerveDriveTrain extends SubsystemBase {
     final String MIN_SPEED_KEY = "Swerve Drive/Min Speed";
     final String MAX_SPEED_KEY = "Swerve Drive/Max Speed";
     /** The angle in degrees we want the swerve to invert the request to get to position faster */
-    final String OPTOMIZE_ANGLE_KEY = "Swerve Drive/Optomize Angle";
+    final String OPTIMIZE_ANGLE_KEY = "Swerve Drive/Optimize Angle";
     final String FIELD_ORIENTED = "Swerve Drive/Field Oriented";
 
     private SwerveDriveKinematics kinematics;
@@ -115,7 +114,7 @@ public class SwerveDriveTrain extends SubsystemBase {
         }
         lastTeleop = curTeleop;
 
-        Logger.PushSwerveStates(currentState,swerveTargets);
+        PushSwerveStates(currentState,swerveTargets);
         minSpeed = UtilFunctions.getSetting(MIN_SPEED_KEY, 0.5);
         maxSpeed = UtilFunctions.getSetting(MAX_SPEED_KEY, 5);
     }
@@ -159,7 +158,7 @@ public class SwerveDriveTrain extends SubsystemBase {
 
         //filter the swerve wheels
         if(optimize) {
-            requestStates = optomizeSwerve(requestStates, currentState);
+            requestStates = optimizeSwerve(requestStates, currentState);
         }
 
         // command each swerve module
@@ -194,10 +193,10 @@ public class SwerveDriveTrain extends SubsystemBase {
         }
     }
 
-    public SwerveModuleState[] optomizeSwerve(SwerveModuleState[] requestStates, SwerveModuleState[] currentState) {
+    public SwerveModuleState[] optimizeSwerve(SwerveModuleState[] requestStates, SwerveModuleState[] currentState) {
         SwerveModuleState[] outputStates = new SwerveModuleState[requestStates.length];
-        //we use a little larger optomize angle since drivers turning 90* is a pretty common operation
-        double optomizeAngle = UtilFunctions.getSetting(OPTOMIZE_ANGLE_KEY, 120);
+        //we use a little larger optimize angle since drivers turning 90* is a pretty common operation
+        double optimizeAngle = UtilFunctions.getSetting(OPTIMIZE_ANGLE_KEY, 120);
         double maxAccel = UtilFunctions.getSetting(MAX_ACCEL_KEY, 42);
         double maxOmega = UtilFunctions.getSetting(MAX_OMEGA_KEY, 3000);
 
@@ -210,7 +209,7 @@ public class SwerveDriveTrain extends SubsystemBase {
             double curAngle = currentState[i].angle.getDegrees();
             double speedReq = requestStates[i].speedMetersPerSecond;
             double deltaMod = MathUtil.inputModulus(angleReq - curAngle,-180,180);
-            if(Math.abs(deltaMod) > optomizeAngle) {
+            if(Math.abs(deltaMod) > optimizeAngle) {
                 angleReq = angleReq - 180;
                 speedReq = -requestStates[i].speedMetersPerSecond;
             }
@@ -255,6 +254,20 @@ public class SwerveDriveTrain extends SubsystemBase {
         return outputStates;
     }
 
+    private void PushSwerveStates(SwerveModuleState[] state, SwerveModuleState[] request) {
+        var size = state.length;
+        var states = new double[size * 2];
+        var requests = new double[size * 2];
+        for(var i=0; i<size; i++) {
+            states[(i * 2)] = state[i].angle.getDegrees();
+            states[(i * 2)+1] = state[i].speedMetersPerSecond;
+            requests[(i * 2)] = request[i].angle.getDegrees();
+            requests[(i * 2)+1] = request[i].speedMetersPerSecond;
+        }
+        SmartDashboard.putNumberArray("Swerve State", states);
+        SmartDashboard.putNumberArray("Swerve Request", requests);
+    }
+
     public void resetFieldOriented() {
         fieldOffset = currentHeading;
     }
@@ -283,7 +296,7 @@ public class SwerveDriveTrain extends SubsystemBase {
         return hardware.getCornerLocations();
     }
 
-    public void setOptomizeOn(boolean enabled) {
+    public void setOptimizeOn(boolean enabled) {
         optimize = enabled;
     }
 

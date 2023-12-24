@@ -1,6 +1,8 @@
 package org.livoniawarriors;
 
 import java.lang.reflect.Field;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Set;
 import java.util.function.DoubleSupplier;
@@ -19,7 +21,7 @@ import com.ctre.phoenix.sensors.PigeonIMU;
 import com.ctre.phoenix.sensors.PigeonIMU_Faults;
 import com.revrobotics.CANSparkMax;
 
-import edu.wpi.first.math.kinematics.SwerveModuleState;
+import edu.wpi.first.networktables.BooleanPublisher;
 import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj.DataLogManager;
@@ -54,6 +56,8 @@ public class Logger implements Runnable {
     private NetworkTable sensorTable;
     private NetworkTable canStatusTable;
     private static NetworkTable taskTimings;
+
+    private BooleanPublisher flashDrivePresent;
 
     private static boolean faultSet;
     private static boolean sfaultSet;
@@ -91,6 +95,8 @@ public class Logger implements Runnable {
                 .onCommandFinish(
                         command -> Shuffleboard.addEventMarker(
                                 "Command finished", command.getName(), EventImportance.kNormal));
+
+        flashDrivePresent = UtilFunctions.getNtPub("/Sensors/Flash Drive Attached", false);
     }
 
     public void start() {
@@ -133,20 +139,6 @@ public class Logger implements Runnable {
 
     public static void RegisterPigeon(BasePigeon pigeon) {
         Logger.pigeon = pigeon;
-    }
-
-    public static void PushSwerveStates(SwerveModuleState[] state, SwerveModuleState[] request) {
-        var size = state.length;
-        var states = new double[size * 2];
-        var requests = new double[size * 2];
-        for(var i=0; i<size; i++) {
-            states[(i * 2)] = state[i].angle.getDegrees();
-            states[(i * 2)+1] = state[i].speedMetersPerSecond;
-            requests[(i * 2)] = request[i].angle.getDegrees();
-            requests[(i * 2)+1] = request[i].speedMetersPerSecond;
-        }
-        SmartDashboard.putNumberArray("Swerve State", states);
-        SmartDashboard.putNumberArray("Swerve Request", requests);
     }
 
     public void run() {
@@ -294,6 +286,14 @@ public class Logger implements Runnable {
                 sfaultSet = true;
             }
         }
+
+        boolean flashDriveAttached;
+        if (Robot.isReal()) {
+            flashDriveAttached = Files.exists(Paths.get("/u"));
+        } else {
+            flashDriveAttached = true;
+        }
+        flashDrivePresent.set(flashDriveAttached);
     }
 
     private void readTalon(String name, BaseTalon talon) {

@@ -83,7 +83,7 @@ public class UtilFunctions {
      * It will locate the key in the Preferences table still.
      * @param key The parameter you want to get (slashes are allowed)
      * @param backup The value to use if the key is missing
-     * @return The value in NetworkTables if it exists, the backup if missing
+     * @return The subscriber to get values from
      */
     public static DoubleSubscriber getSettingSub(String key, double backup) {
         DoubleTopic topic = NetworkTableInstance.getDefault().getDoubleTopic("/Preferences/" + key);
@@ -101,7 +101,7 @@ public class UtilFunctions {
      * This creates a NT subscriber so we don't have to keep querying the key in the table to get the value.
      * @param key The parameter you want to get (slashes are allowed)
      * @param backup The value to use if the key is missing
-     * @return The value in NetworkTables if it exists, the backup if missing
+     * @return The subscriber to get values from
      */
     public static BooleanSubscriber getNtSub(String key, boolean backup) {
         BooleanTopic topic = NetworkTableInstance.getDefault().getBooleanTopic(key);
@@ -112,6 +112,30 @@ public class UtilFunctions {
             pub.set(backup);
         }
         return sub;
+    }
+
+    /**
+     * This creates a NT publisher so we don't have to keep querying the key in the table.
+     * @param key The parameter you want to get (slashes are allowed)
+     * @return The publisher to put data in
+     */
+    public static BooleanPublisher getNtPub(String key, boolean initValue) {
+        BooleanTopic topic = NetworkTableInstance.getDefault().getBooleanTopic(key);
+        BooleanPublisher pub = topic.publish();
+        pub.setDefault(initValue);
+        return pub;
+    }
+
+    /**
+     * This creates a NT publisher so we don't have to keep querying the key in the table.
+     * @param key The parameter you want to get (slashes are allowed)
+     * @return The publisher to put data in
+     */
+    public static DoublePublisher getNtPub(String key, double initValue) {
+        DoubleTopic topic = NetworkTableInstance.getDefault().getDoubleTopic(key);
+        DoublePublisher pub = topic.publish();
+        pub.setDefault(initValue);
+        return pub;
     }
 
     /**
