@@ -35,10 +35,10 @@ public class SwerveDriveSim implements ISwerveDriveIo {
     };
 
     private String[] moduleNames = {
-        "Swerve FL/",
-        "Swerve FR/",
-        "Swerve RL/",
-        "Swerve RR/"
+        "FL",
+        "FR",
+        "RL",
+        "RR"
     };
 
     public SwerveDriveSim() {

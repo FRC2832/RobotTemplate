@@ -14,11 +14,12 @@ import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
+import edu.wpi.first.networktables.DoubleArrayPublisher;
+import edu.wpi.first.networktables.DoublePublisher;
 import edu.wpi.first.networktables.DoubleSubscriber;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.TimedRobot;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
 public class SwerveDriveTrain extends SubsystemBase {
@@ -37,7 +38,6 @@ public class SwerveDriveTrain extends SubsystemBase {
     private ISwerveDriveIo hardware;
     private SwerveModulePosition[] swerveStates;
     private SwerveModuleState[] swerveTargets;
-    private String[] moduleNames;
     private double gyroOffset = 0;
     private PIDController pidZero = new PIDController(0.15, 0.001, 0);
     private PIDController[] turnPid;
@@ -50,8 +50,22 @@ public class SwerveDriveTrain extends SubsystemBase {
     private Supplier<Rotation2d> gyroSupplier;
     private boolean lastTeleop;
 
+    //input settings
     private DoubleSubscriber driverMaxSpeed;
     private DoubleSubscriber driverMaxOmega;
+    private DoubleSubscriber[] wheelOffsetSetting;
+
+    //output data
+    private DoublePublisher[] wheelCalcAngle;
+    private DoublePublisher[] wheelCommandAngle;
+    private DoublePublisher[] wheelRequestAngle;
+    private DoublePublisher[] wheelCommandSpeed;
+    private DoublePublisher[] wheelRequestSpeed;
+    private DoublePublisher swerveXSpeed;
+    private DoublePublisher swerveYSpeed;
+    private DoublePublisher swerveOmega;
+    private DoubleArrayPublisher swerveStatePub;
+    private DoubleArrayPublisher swerveRequestPub;
 
     public SwerveDriveTrain(ISwerveDriveIo hSwerveDriveIo, Supplier<Rotation2d> gyroSupplier) {
         super();
@@ -61,6 +75,9 @@ public class SwerveDriveTrain extends SubsystemBase {
         int numWheels = hardware.getCornerLocations().length;
         fieldOffset = new Rotation2d();
 
+        //initialize module names
+        String[] moduleNames = hardware.getModuleNames();
+
         //initialize the corner locations
         kinematics = new SwerveDriveKinematics(hSwerveDriveIo.getCornerLocations());
         
@@ -69,20 +86,35 @@ public class SwerveDriveTrain extends SubsystemBase {
         swerveTargets = new SwerveModuleState[numWheels];
         turnPid = new PIDController[numWheels];
         currentState = new SwerveModuleState[numWheels];
+        wheelOffsetSetting = new DoubleSubscriber[numWheels];
+        wheelCalcAngle = new DoublePublisher[numWheels];
+        wheelCommandAngle = new DoublePublisher[numWheels];
+        wheelRequestAngle = new DoublePublisher[numWheels];
+        wheelCommandSpeed = new DoublePublisher[numWheels];
+        wheelRequestSpeed = new DoublePublisher[numWheels];
         for(int wheel = 0; wheel < numWheels; wheel++) {
             swerveStates[wheel] = new SwerveModulePosition();
             swerveTargets[wheel] = new SwerveModuleState();
             turnPid[wheel] = new PIDController(5,1.8,0);
             currentState[wheel] = new SwerveModuleState();
+            wheelOffsetSetting[wheel] = UtilFunctions.getSettingSub("/Swerve Drive/Wheel Offset " + moduleNames[wheel] + "_deg", 0);
+            wheelCalcAngle[wheel] = UtilFunctions.getNtPub("/Swerve Drive/Module " + moduleNames[wheel] + "/Calc Angle_deg", 0);
+            wheelCommandAngle[wheel] = UtilFunctions.getNtPub("/Swerve Drive/Module " + moduleNames[wheel] + "/Command Angle_deg", 0);
+            wheelRequestAngle[wheel] = UtilFunctions.getNtPub("/Swerve Drive/Module " + moduleNames[wheel] + "/Request Angle_deg", 0);
+            wheelCommandSpeed[wheel] = UtilFunctions.getNtPub("/Swerve Drive/Module " + moduleNames[wheel] + "/Command Speed_mps", 0);
+            wheelRequestSpeed[wheel] = UtilFunctions.getNtPub("/Swerve Drive/Module " + moduleNames[wheel] + "/Request Speed_mps", 0);
         }
 
-        //initialize module names
-        moduleNames = hardware.getModuleNames();
-
         /** How fast we want the driver to go during normal operation in m/s */
-        driverMaxSpeed = UtilFunctions.getSettingSub("Swerve Drive/Max Driver Speed_meter_sec", 3);
+        driverMaxSpeed = UtilFunctions.getSettingSub("/Swerve Drive/Max Driver Speed_mps", 3);
         /** How fast we want the driver to turn during normal operation in deg/s */
-        driverMaxOmega = UtilFunctions.getSettingSub("Swerve Drive/Max Driver Omega_deg_sec", 325);   //1.8 * Pi rad/sec
+        driverMaxOmega = UtilFunctions.getSettingSub("/Swerve Drive/Max Driver Omega_dps", 625);   //1.8 * Pi rad/sec
+
+        swerveXSpeed = UtilFunctions.getNtPub("/Swerve Drive/X Speed_mps", 0);
+        swerveYSpeed = UtilFunctions.getNtPub("/Swerve Drive/Y Speed_mps", 0);
+        swerveOmega = UtilFunctions.getNtPub("/Swerve Drive/Omega_dps", 0);
+        swerveStatePub = UtilFunctions.getNtPub("/Swerve Drive/Module States", new double[0]);
+        swerveRequestPub = UtilFunctions.getNtPub("/Swerve Drive/Module Requests", new double[0]);
     }
     
     @Override
@@ -92,7 +124,7 @@ public class SwerveDriveTrain extends SubsystemBase {
 
         //read the swerve corner state
         for(int wheel = 0; wheel < swerveStates.length; wheel++) {
-            double offset = UtilFunctions.getSetting(moduleNames[wheel] + "Wheel Offset", 0);
+            double offset = wheelOffsetSetting[wheel].get(0);
             double angle = hardware.getCornerAbsAngle(wheel) - offset;
             swerveStates[wheel].angle = Rotation2d.fromDegrees(angle);
             swerveStates[wheel].distanceMeters = hardware.getCornerDistance(wheel);
@@ -100,7 +132,7 @@ public class SwerveDriveTrain extends SubsystemBase {
             currentState[wheel].angle = swerveStates[wheel].angle;
             currentState[wheel].speedMetersPerSecond = hardware.getCornerSpeed(wheel);
 
-            SmartDashboard.putNumber(moduleNames[wheel] + "Calc Angle", swerveStates[wheel].angle.getDegrees());
+            wheelCalcAngle[wheel].set(swerveStates[wheel].angle.getDegrees());
         }
 
         //when we are disabled, reset the turn pids as we don't want to act on the "error" when reenabled
@@ -142,9 +174,10 @@ public class SwerveDriveTrain extends SubsystemBase {
             speeds = new ChassisSpeeds(xSpeed, ySpeed, turn);
         }
         
-        SmartDashboard.putNumber("Swerve XSpeed", xSpeed);
-        SmartDashboard.putNumber("Swerve YSpeed", ySpeed);
-        SmartDashboard.putNumber("Swerve Turn", turn);
+        //log the request
+        swerveXSpeed.set(xSpeed);
+        swerveYSpeed.set(ySpeed);
+        swerveOmega.set(Math.toDegrees(turn));
 
         //calculate the states from the speeds
         SwerveModuleState[] requestStates = kinematics.toSwerveModuleStates(speeds);
@@ -152,8 +185,8 @@ public class SwerveDriveTrain extends SubsystemBase {
         SwerveDriveKinematics.desaturateWheelSpeeds(requestStates, maxSpeed);
 
         for(int i=0; i<requestStates.length; i++) {
-            SmartDashboard.putNumber(moduleNames[i] + "Requested Angle", requestStates[i].angle.getDegrees());
-            SmartDashboard.putNumber(moduleNames[i] + "Requested Speed", requestStates[i].speedMetersPerSecond);
+            wheelRequestAngle[i].set(requestStates[i].angle.getDegrees());
+            wheelRequestSpeed[i].set(requestStates[i].speedMetersPerSecond);
         }
 
         //filter the swerve wheels
@@ -174,8 +207,8 @@ public class SwerveDriveTrain extends SubsystemBase {
             // velocity drive mode
             hardware.setDriveCommand(i, ControlMode.Velocity, requestStates[i].speedMetersPerSecond);
 
-            SmartDashboard.putNumber(moduleNames[i] + "Command Angle", requestStates[i].angle.getDegrees());
-            SmartDashboard.putNumber(moduleNames[i] + "Command Speed", requestStates[i].speedMetersPerSecond);
+            wheelCommandAngle[i].set(requestStates[i].angle.getDegrees());
+            wheelCommandSpeed[i].set(requestStates[i].speedMetersPerSecond);
         }
         swerveTargets = requestStates;
     }
@@ -190,7 +223,16 @@ public class SwerveDriveTrain extends SubsystemBase {
             var volts = -turnPid[i].calculate(swerveStates[i].angle.getRadians(),requestStates[i].angle.getRadians());
             hardware.setDriveCommand(i, ControlMode.Velocity, requestStates[i].speedMetersPerSecond);
             hardware.setTurnCommand(i, ControlMode.PercentOutput, volts / RobotController.getBatteryVoltage());
+
+            wheelRequestAngle[i].set(requestStates[i].angle.getDegrees());
+            wheelRequestSpeed[i].set(requestStates[i].speedMetersPerSecond);
         }
+
+        ChassisSpeeds speeds = kinematics.toChassisSpeeds(requestStates);
+        //log the request
+        swerveXSpeed.set(speeds.vxMetersPerSecond);
+        swerveYSpeed.set(speeds.vyMetersPerSecond);
+        swerveOmega.set(Math.toDegrees(speeds.omegaRadiansPerSecond));
     }
 
     public SwerveModuleState[] optimizeSwerve(SwerveModuleState[] requestStates, SwerveModuleState[] currentState) {
@@ -215,7 +257,7 @@ public class SwerveDriveTrain extends SubsystemBase {
             }
 
             //smooth out drive command
-            
+
             double maxSpeedDelta = maxAccel * TimedRobot.kDefaultPeriod;           //acceleration * loop time
             //whatever value is bigger flips when forwards vs backwards
             double value1 = currentState[i].speedMetersPerSecond - maxSpeedDelta;
@@ -255,17 +297,17 @@ public class SwerveDriveTrain extends SubsystemBase {
     }
 
     private void PushSwerveStates(SwerveModuleState[] state, SwerveModuleState[] request) {
-        var size = state.length;
-        var states = new double[size * 2];
-        var requests = new double[size * 2];
-        for(var i=0; i<size; i++) {
+        int size = state.length;
+        double[] states = new double[size * 2];
+        double[] requests = new double[size * 2];
+        for(int i=0; i<size; i++) {
             states[(i * 2)] = state[i].angle.getDegrees();
             states[(i * 2)+1] = state[i].speedMetersPerSecond;
             requests[(i * 2)] = request[i].angle.getDegrees();
             requests[(i * 2)+1] = request[i].speedMetersPerSecond;
         }
-        SmartDashboard.putNumberArray("Swerve State", states);
-        SmartDashboard.putNumberArray("Swerve Request", requests);
+        swerveStatePub.set(states);
+        swerveRequestPub.set(requests);
     }
 
     public void resetFieldOriented() {
@@ -299,7 +341,7 @@ public class SwerveDriveTrain extends SubsystemBase {
     public void setOptimizeOn(boolean enabled) {
         optimize = enabled;
     }
-
+    
     public double getMaxSpeed() {
         return maxSpeed;
     }

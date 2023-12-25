@@ -6,6 +6,8 @@ import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.networktables.BooleanPublisher;
 import edu.wpi.first.networktables.BooleanSubscriber;
 import edu.wpi.first.networktables.BooleanTopic;
+import edu.wpi.first.networktables.DoubleArrayPublisher;
+import edu.wpi.first.networktables.DoubleArrayTopic;
 import edu.wpi.first.networktables.DoublePublisher;
 import edu.wpi.first.networktables.DoubleSubscriber;
 import edu.wpi.first.networktables.DoubleTopic;
@@ -86,7 +88,7 @@ public class UtilFunctions {
      * @return The subscriber to get values from
      */
     public static DoubleSubscriber getSettingSub(String key, double backup) {
-        DoubleTopic topic = NetworkTableInstance.getDefault().getDoubleTopic("/Preferences/" + key);
+        DoubleTopic topic = NetworkTableInstance.getDefault().getDoubleTopic(checkKey("/Preferences/" + key));
         DoublePublisher pub = topic.publish();
         pub.setDefault(backup);
         DoubleSubscriber sub = topic.subscribe(backup);
@@ -105,7 +107,7 @@ public class UtilFunctions {
      * @return The subscriber to get values from
      */
     public static BooleanSubscriber getSettingSub(String key, boolean backup) {
-        BooleanTopic topic = NetworkTableInstance.getDefault().getBooleanTopic("/Preferences/" + key);
+        BooleanTopic topic = NetworkTableInstance.getDefault().getBooleanTopic(checkKey("/Preferences/" + key));
         BooleanPublisher pub = topic.publish();
         pub.setDefault(backup);
         BooleanSubscriber sub = topic.subscribe(backup);
@@ -123,7 +125,7 @@ public class UtilFunctions {
      * @return The subscriber to get values from
      */
     public static BooleanSubscriber getNtSub(String key, boolean backup) {
-        BooleanTopic topic = NetworkTableInstance.getDefault().getBooleanTopic(key);
+        BooleanTopic topic = NetworkTableInstance.getDefault().getBooleanTopic(checkKey(key));
         BooleanPublisher pub = topic.publish();
         pub.setDefault(backup);
         BooleanSubscriber sub = topic.subscribe(backup);
@@ -139,7 +141,7 @@ public class UtilFunctions {
      * @return The publisher to put data in
      */
     public static BooleanPublisher getNtPub(String key, boolean initValue) {
-        BooleanTopic topic = NetworkTableInstance.getDefault().getBooleanTopic(key);
+        BooleanTopic topic = NetworkTableInstance.getDefault().getBooleanTopic(checkKey(key));
         BooleanPublisher pub = topic.publish();
         pub.setDefault(initValue);
         return pub;
@@ -151,10 +153,35 @@ public class UtilFunctions {
      * @return The publisher to put data in
      */
     public static DoublePublisher getNtPub(String key, double initValue) {
-        DoubleTopic topic = NetworkTableInstance.getDefault().getDoubleTopic(key);
+        DoubleTopic topic = NetworkTableInstance.getDefault().getDoubleTopic(checkKey(key));
         DoublePublisher pub = topic.publish();
         pub.setDefault(initValue);
         return pub;
+    }
+
+    /**
+     * This creates a NT publisher so we don't have to keep querying the key in the table.
+     * @param key The parameter you want to get (slashes are allowed)
+     * @return The publisher to put data in
+     */
+    public static DoubleArrayPublisher getNtPub(String key, double[] initValue) {
+        DoubleArrayTopic topic = NetworkTableInstance.getDefault().getDoubleArrayTopic(checkKey(key));
+        DoubleArrayPublisher pub = topic.publish();
+        pub.setDefault(initValue);
+        return pub;
+    }
+
+    private static String checkKey(String key) {
+        String newKey;
+
+        if (key.startsWith("/", 0)) {
+            newKey = key;
+        } else {
+            newKey = "/" + key;
+        }
+
+        newKey = newKey.replaceAll("//", "/");
+        return newKey;
     }
 
     /**
