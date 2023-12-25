@@ -43,6 +43,7 @@ public class SwerveDriveTrain extends SubsystemBase {
     private PIDController[] turnPid;
     private SwerveModuleState[] currentState;
     private boolean optimize;
+    private boolean resetZeroPid;
     private double minSpeed;
     private double maxSpeed;
     private Rotation2d currentHeading;
@@ -72,6 +73,7 @@ public class SwerveDriveTrain extends SubsystemBase {
         this.hardware = hSwerveDriveIo;
         this.gyroSupplier = gyroSupplier;
         optimize = true;
+        resetZeroPid = false;
         int numWheels = hardware.getCornerLocations().length;
         fieldOffset = new Rotation2d();
 
@@ -137,7 +139,7 @@ public class SwerveDriveTrain extends SubsystemBase {
 
         //when we are disabled, reset the turn pids as we don't want to act on the "error" when reenabled
         boolean curTeleop = DriverStation.isTeleopEnabled();
-        if(lastTeleop == false && curTeleop == true) {
+        if(lastTeleop == false && curTeleop == true || resetZeroPid) {
             for (var pid : turnPid) {
                 pid.reset();
             }
@@ -145,6 +147,7 @@ public class SwerveDriveTrain extends SubsystemBase {
             fieldOffset = currentHeading;
         }
         lastTeleop = curTeleop;
+        resetZeroPid = false;
 
         PushSwerveStates(currentState,swerveTargets);
         minSpeed = UtilFunctions.getSetting(MIN_SPEED_KEY, 0.5);
@@ -191,7 +194,7 @@ public class SwerveDriveTrain extends SubsystemBase {
 
         //filter the swerve wheels
         if(optimize) {
-            requestStates = optimizeSwerve(requestStates, currentState);
+            requestStates = optimizeSwerve(requestStates, currentState, true);
         }
 
         // command each swerve module
@@ -214,10 +217,11 @@ public class SwerveDriveTrain extends SubsystemBase {
     }
 
     public void setWheelCommand(SwerveModuleState[] requestStates) {
+        resetZeroPid = true;
         swerveTargets = requestStates;
         for(int i=0; i<requestStates.length; i++) {
             if(optimize) {
-                requestStates = optimizeSwerve(requestStates, currentState);
+                requestStates = optimizeSwerve(requestStates, currentState, false);
             }
                 
             var volts = -turnPid[i].calculate(swerveStates[i].angle.getRadians(),requestStates[i].angle.getRadians());
@@ -235,7 +239,7 @@ public class SwerveDriveTrain extends SubsystemBase {
         swerveOmega.set(Math.toDegrees(speeds.omegaRadiansPerSecond));
     }
 
-    public SwerveModuleState[] optimizeSwerve(SwerveModuleState[] requestStates, SwerveModuleState[] currentState) {
+    public SwerveModuleState[] optimizeSwerve(SwerveModuleState[] requestStates, SwerveModuleState[] currentState, boolean stopTurnAtZero) {
         SwerveModuleState[] outputStates = new SwerveModuleState[requestStates.length];
         //we use a little larger optimize angle since drivers turning 90* is a pretty common operation
         double optimizeAngle = UtilFunctions.getSetting(OPTIMIZE_ANGLE_KEY, 120);
@@ -257,7 +261,6 @@ public class SwerveDriveTrain extends SubsystemBase {
             }
 
             //smooth out drive command
-
             double maxSpeedDelta = maxAccel * TimedRobot.kDefaultPeriod;           //acceleration * loop time
             //whatever value is bigger flips when forwards vs backwards
             double value1 = currentState[i].speedMetersPerSecond - maxSpeedDelta;
@@ -269,11 +272,7 @@ public class SwerveDriveTrain extends SubsystemBase {
 
             //smooth out turn command
             double maxAngleDelta = maxOmega * TimedRobot.kDefaultPeriod;           //acceleration * loop time
-            if (Math.abs(speedReq) > minSpeed) {
-                angleReq = MathUtil.inputModulus(angleReq, curAngle - 180, curAngle + 180);
-            } else {
-                angleReq = curAngle;
-            }
+            angleReq = MathUtil.inputModulus(angleReq, curAngle - 180, curAngle + 180);
             double delta = angleReq - curAngle;
             if(delta > maxAngleDelta) {
                 angleReq = curAngle + maxAngleDelta;
@@ -286,7 +285,7 @@ public class SwerveDriveTrain extends SubsystemBase {
             outputStates[i].angle = Rotation2d.fromDegrees(angleReq);
 
             //check to see if the robot request is moving
-            if (Math.abs(speedReq) < minSpeed) {
+            if (stopTurnAtZero && Math.abs(speedReq) < minSpeed) {
                 //stop the requests if there is no movement
                 outputStates[i].angle = currentState[i].angle;
                 //take out minimal speed so that the motors don't jitter
@@ -310,6 +309,9 @@ public class SwerveDriveTrain extends SubsystemBase {
         swerveRequestPub.set(requests);
     }
 
+    public void stopWheels() {
+        SwerveDrive(0,0,0);
+    }
     public void resetFieldOriented() {
         fieldOffset = currentHeading;
     }
@@ -342,6 +344,10 @@ public class SwerveDriveTrain extends SubsystemBase {
         optimize = enabled;
     }
     
+    public boolean getOptimizeOn() {
+        return optimize;
+    }
+
     public double getMaxSpeed() {
         return maxSpeed;
     }
@@ -352,5 +358,9 @@ public class SwerveDriveTrain extends SubsystemBase {
 
     public double getMaxDriverOmega() {
         return Math.toRadians(driverMaxOmega.get());
+    }
+
+    public double getMinSpeed() {
+        return minSpeed;
     }
 }

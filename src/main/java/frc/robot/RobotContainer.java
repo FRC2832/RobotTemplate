@@ -8,6 +8,7 @@ import org.livoniawarriors.odometry.Odometry;
 import org.livoniawarriors.odometry.Pigeon2Gyro;
 import org.livoniawarriors.odometry.SimSwerveGyro;
 import org.livoniawarriors.swerve.DriveXbox;
+import org.livoniawarriors.swerve.MoveWheels;
 import org.livoniawarriors.swerve.SwerveDriveSim;
 import org.livoniawarriors.swerve.SwerveDriveTrain;
 
@@ -55,6 +56,13 @@ public class RobotContainer {
         
         odometry.setSwerveDrive(swerveDrive);
         odometry.setStartingPose(new Pose2d(1.92, 2.79, new Rotation2d(0)));
+
+        //add some buttons to press for development
+        SmartDashboard.putData("Wheels Straight", new MoveWheels(swerveDrive, MoveWheels.WheelsStraight()));
+        SmartDashboard.putData("Wheels Crossed", new MoveWheels(swerveDrive, MoveWheels.WheelsCrossed()));
+        SmartDashboard.putData("Wheels Diamond", new MoveWheels(swerveDrive, MoveWheels.WheelsDiamond()));
+        SmartDashboard.putData("Drive Wheels Straight", new MoveWheels(swerveDrive, MoveWheels.DriveWheelsStraight()));
+        SmartDashboard.putData("Drive Wheels Diamond", new MoveWheels(swerveDrive, MoveWheels.DriveWheelsDiamond()));
     }
 
     /**
