@@ -11,7 +11,7 @@ https://apps.microsoft.com/store/detail/phoenix-tuner-x/9NVV4PWDW27Z
 * Rev Client (how to configure Rev devices)
 https://docs.revrobotics.com/rev-hardware-client/
 
-* GitHub Desktop (easier git access and it installs the git toolset for development) 
+* GitHub Desktop (easier git access and it installs the git tool set for development) 
 https://desktop.github.com/
 
 * PathPlanner for autonomous paths

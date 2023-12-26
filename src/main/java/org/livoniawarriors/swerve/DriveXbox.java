@@ -15,7 +15,7 @@ public class DriveXbox extends Command {
     private DoubleSubscriber deadband;
 
     /**
-     * Inject the drivetain and controller to use
+     * Inject the drivetrain and controller to use
      * @param drive Drivetrain to command
      * @param cont Controller to read from
      */
