@@ -140,11 +140,12 @@ public class SwerveDriveTrain extends SubsystemBase {
         //when we are disabled, reset the turn pids as we don't want to act on the "error" when reenabled
         boolean curTeleop = DriverStation.isTeleopEnabled();
         if(lastTeleop == false && curTeleop == true || resetZeroPid) {
-            for (var pid : turnPid) {
+            for (PIDController pid : turnPid) {
                 pid.reset();
             }
             gyroOffset = currentHeading.getDegrees();
             fieldOffset = currentHeading;
+            pidZero.reset();
         }
         lastTeleop = curTeleop;
         resetZeroPid = false;
@@ -204,7 +205,7 @@ public class SwerveDriveTrain extends SubsystemBase {
                 //reset the PID to remove all the I term error so we don't overshoot and rebound
                 turnPid[i].reset();
             }
-            var turnVolts = -turnPid[i].calculate(swerveStates[i].angle.getRadians(), requestStates[i].angle.getRadians());
+            double turnVolts = -turnPid[i].calculate(swerveStates[i].angle.getRadians(), requestStates[i].angle.getRadians());
             hardware.setTurnCommand(i, ControlMode.PercentOutput, turnVolts / RobotController.getBatteryVoltage());
 
             // velocity drive mode
@@ -224,7 +225,7 @@ public class SwerveDriveTrain extends SubsystemBase {
                 requestStates = optimizeSwerve(requestStates, currentState, false);
             }
                 
-            var volts = -turnPid[i].calculate(swerveStates[i].angle.getRadians(),requestStates[i].angle.getRadians());
+            double volts = -turnPid[i].calculate(swerveStates[i].angle.getRadians(),requestStates[i].angle.getRadians());
             hardware.setDriveCommand(i, ControlMode.Velocity, requestStates[i].speedMetersPerSecond);
             hardware.setTurnCommand(i, ControlMode.PercentOutput, volts / RobotController.getBatteryVoltage());
 
