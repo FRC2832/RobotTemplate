@@ -5,6 +5,7 @@
 package frc.robot;
 
 import org.livoniawarriors.leds.LedSubsystem;
+import org.livoniawarriors.leds.LightningFlash;
 import org.livoniawarriors.leds.RainbowLeds;
 import org.livoniawarriors.leds.TestLeds;
 import org.livoniawarriors.odometry.Odometry;
@@ -16,11 +17,19 @@ import org.livoniawarriors.swerve.SwerveDriveSim;
 import org.livoniawarriors.swerve.SwerveDriveTrain;
 import org.livoniawarriors.swerve.SwerveHw23;
 
+import com.pathplanner.lib.auto.AutoBuilder;
+import com.pathplanner.lib.auto.NamedCommands;
+import com.pathplanner.lib.util.HolonomicPathFollowerConfig;
+import com.pathplanner.lib.util.PIDConstants;
+import com.pathplanner.lib.util.ReplanningConfig;
+
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.XboxController;
+import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import edu.wpi.first.wpilibj.util.Color;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
@@ -38,6 +47,8 @@ public class RobotContainer {
     private LedSubsystem leds;
 
     private XboxController driverController;
+
+    private SendableChooser<Command> autoChooser;
 
     public RobotContainer() {
         driverController = new XboxController(0);
@@ -73,6 +84,30 @@ public class RobotContainer {
         SmartDashboard.putData("Drive Wheels Straight", new MoveWheels(swerveDrive, MoveWheels.DriveWheelsStraight()));
         SmartDashboard.putData("Drive Wheels Diamond", new MoveWheels(swerveDrive, MoveWheels.DriveWheelsDiamond()));
         SmartDashboard.putData("Test Leds", new TestLeds(leds));
+
+        // Register Named Commands for PathPlanner
+        NamedCommands.registerCommand("flashRed", new LightningFlash(leds, Color.kFirstRed));
+        NamedCommands.registerCommand("flashBlue", new LightningFlash(leds, Color.kFirstBlue));
+
+        // Configure the AutoBuilder
+        AutoBuilder.configureHolonomic(
+            odometry::getPose, // Robot pose supplier
+            odometry::resetPose, // Method to reset odometry (will be called if your auto has a starting pose)
+            swerveDrive::getRobotRelativeSpeeds, // ChassisSpeeds supplier. MUST BE ROBOT RELATIVE
+            swerveDrive::driveRobotRelative, // Method that will drive the robot given ROBOT RELATIVE ChassisSpeeds
+            new HolonomicPathFollowerConfig( // HolonomicPathFollowerConfig, this should likely live in your Constants class
+                new PIDConstants(5.0, 0.0, 0.0), // Translation PID constants
+                new PIDConstants(5.0, 0.0, 0.0), // Rotation PID constants
+                swerveDrive.getMaxSpeed(), // Max module speed, in m/s
+                swerveDrive.getDriveBaseRadius(), // Drive base radius in meters. Distance from robot center to furthest module.
+                new ReplanningConfig() // Default path replanning config. See the API for the options here
+            ),
+            swerveDrive // Reference to this subsystem to set requirements
+        );
+
+        // Build an auto chooser. This will use Commands.none() as the default option.
+        autoChooser = AutoBuilder.buildAutoChooser();
+        SmartDashboard.putData("Auto Chooser", autoChooser);
     }
 
     /**
@@ -96,9 +131,6 @@ public class RobotContainer {
      * @return the command to run in autonomous
      */
     public Command getAutonomousCommand() {
-        // An example command will be run in autonomous
-        return new Command() {
-            
-        };
+        return autoChooser.getSelected();
     }
 }

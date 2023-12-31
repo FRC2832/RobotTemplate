@@ -32,11 +32,11 @@ public class SwerveDriveTrain extends SubsystemBase {
 
     private SwerveDriveKinematics kinematics;
     private ISwerveDriveIo hardware;
-    private SwerveModulePosition[] swerveStates;
+    private SwerveModulePosition[] swervePositions;
     private SwerveModuleState[] swerveTargets;
     private double gyroOffset = 0;
     private PIDController pidZero = new PIDController(0.15, 0.001, 0);
-    private SwerveModuleState[] currentState;
+    private SwerveModuleState[] swerveStates;
     private boolean optimize;
     private boolean resetZeroPid;
     private double minSpeed;
@@ -79,9 +79,9 @@ public class SwerveDriveTrain extends SubsystemBase {
         kinematics = new SwerveDriveKinematics(hSwerveDriveIo.getCornerLocations());
         
         //initialize the swerve states
-        swerveStates = new SwerveModulePosition[numWheels];
+        swervePositions = new SwerveModulePosition[numWheels];
         swerveTargets = new SwerveModuleState[numWheels];
-        currentState = new SwerveModuleState[numWheels];
+        swerveStates = new SwerveModuleState[numWheels];
         wheelOffsetSetting = new DoubleSubscriber[numWheels];
         wheelCalcAngle = new DoublePublisher[numWheels];
         wheelCommandAngle = new DoublePublisher[numWheels];
@@ -89,9 +89,9 @@ public class SwerveDriveTrain extends SubsystemBase {
         wheelCommandSpeed = new DoublePublisher[numWheels];
         wheelRequestSpeed = new DoublePublisher[numWheels];
         for(int wheel = 0; wheel < numWheels; wheel++) {
-            swerveStates[wheel] = new SwerveModulePosition();
+            swervePositions[wheel] = new SwerveModulePosition();
             swerveTargets[wheel] = new SwerveModuleState();
-            currentState[wheel] = new SwerveModuleState();
+            swerveStates[wheel] = new SwerveModuleState();
             wheelOffsetSetting[wheel] = UtilFunctions.getSettingSub("/Swerve Drive/Wheel Offset " + moduleNames[wheel] + "_deg", 0);
             wheelCalcAngle[wheel] = UtilFunctions.getNtPub("/Swerve Drive/Module " + moduleNames[wheel] + "/Calc Angle_deg", 0);
             wheelCommandAngle[wheel] = UtilFunctions.getNtPub("/Swerve Drive/Module " + moduleNames[wheel] + "/Command Angle_deg", 0);
@@ -118,14 +118,14 @@ public class SwerveDriveTrain extends SubsystemBase {
         currentHeading = odometry.getGyroRotation();
 
         //read the swerve corner state
-        for(int wheel = 0; wheel < swerveStates.length; wheel++) {
+        for(int wheel = 0; wheel < swervePositions.length; wheel++) {
             double offset = wheelOffsetSetting[wheel].get(0);
             double angle = hardware.getCornerAbsAngle(wheel) - offset;
-            swerveStates[wheel].angle = Rotation2d.fromDegrees(angle);
-            swerveStates[wheel].distanceMeters = hardware.getCornerDistance(wheel);
+            swervePositions[wheel].angle = Rotation2d.fromDegrees(angle);
+            swervePositions[wheel].distanceMeters = hardware.getCornerDistance(wheel);
 
-            currentState[wheel].angle = swerveStates[wheel].angle;
-            currentState[wheel].speedMetersPerSecond = hardware.getCornerSpeed(wheel);
+            swerveStates[wheel].angle = swervePositions[wheel].angle;
+            swerveStates[wheel].speedMetersPerSecond = hardware.getCornerSpeed(wheel);
 
             wheelCalcAngle[wheel].set(angle);
             hardware.setCorrectedAngle(wheel, angle);
@@ -141,9 +141,17 @@ public class SwerveDriveTrain extends SubsystemBase {
         lastTeleop = curTeleop;
         resetZeroPid = false;
 
-        PushSwerveStates(currentState,swerveTargets);
+        PushSwerveStates(swerveStates,swerveTargets);
         minSpeed = UtilFunctions.getSetting(MIN_SPEED_KEY, 0.5);
         maxSpeed = UtilFunctions.getSetting(MAX_SPEED_KEY, 5);
+    }
+
+    /**
+     * Used by PathPlanner to set a robot command
+     * @param speeds Speeds to use
+     */
+    public void driveRobotRelative(ChassisSpeeds speeds) {
+        SwerveDrive(speeds.vxMetersPerSecond, speeds.vyMetersPerSecond, speeds.omegaRadiansPerSecond, false);
     }
 
     public void SwerveDrive(double xSpeed, double ySpeed, double turn) {
@@ -185,7 +193,7 @@ public class SwerveDriveTrain extends SubsystemBase {
 
         //filter the swerve wheels
         if(optimize) {
-            requestStates = optimizeSwerve(requestStates, currentState, true);
+            requestStates = optimizeSwerve(requestStates, swerveStates, true);
         }
         setCornerStates(requestStates);
     }
@@ -195,7 +203,7 @@ public class SwerveDriveTrain extends SubsystemBase {
 
         //command the hardware
         if(optimize) {
-            requestStates = optimizeSwerve(requestStates, currentState, false);
+            requestStates = optimizeSwerve(requestStates, swerveStates, false);
         }
         setCornerStates(requestStates);
 
@@ -289,11 +297,11 @@ public class SwerveDriveTrain extends SubsystemBase {
     }
    
     public SwerveModulePosition[] getSwervePositions() {
-        return swerveStates;
+        return swervePositions;
     }
 
     public SwerveModuleState[] getSwerveStates() {
-        return currentState;
+        return swerveStates;
     }
 
     public void setTurnMotorBrakeMode(boolean brakeOn) {
@@ -341,5 +349,24 @@ public class SwerveDriveTrain extends SubsystemBase {
             wheelCommandAngle[wheel].set(states[wheel].angle.getDegrees());
             wheelCommandSpeed[wheel].set(states[wheel].speedMetersPerSecond);
         }
+    }
+
+    public ChassisSpeeds getRobotRelativeSpeeds() {
+        return kinematics.toChassisSpeeds(swerveStates);
+    }
+
+    /**
+     * Drive base radius in meters. Distance from robot center to furthest module.
+     * @return Distance in meters.
+     */
+    public double getDriveBaseRadius() {
+        double dist = 0;
+
+        for(Translation2d module : hardware.getCornerLocations()) {
+            double newDist = Math.sqrt((module.getX() * module.getX()) + (module.getY() * module.getY()));
+            dist = Math.max(newDist, dist);
+        }
+
+        return dist;
     }
 }
