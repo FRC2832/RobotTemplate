@@ -11,10 +11,14 @@ import edu.wpi.first.networktables.DoubleArrayTopic;
 import edu.wpi.first.networktables.DoublePublisher;
 import edu.wpi.first.networktables.DoubleSubscriber;
 import edu.wpi.first.networktables.DoubleTopic;
+import edu.wpi.first.networktables.IntegerPublisher;
+import edu.wpi.first.networktables.IntegerSubscriber;
+import edu.wpi.first.networktables.IntegerTopic;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj.Preferences;
 import edu.wpi.first.wpilibj.RobotBase;
 import edu.wpi.first.wpilibj.TimedRobot;
+import edu.wpi.first.wpilibj.util.Color;
 
 public class UtilFunctions {
     /**
@@ -129,6 +133,40 @@ public class UtilFunctions {
         BooleanPublisher pub = topic.publish();
         pub.setDefault(backup);
         BooleanSubscriber sub = topic.subscribe(backup);
+        if(!sub.exists()) {
+            pub.set(backup);
+        }
+        return sub;
+    }
+
+    /**
+     * This creates a NT subscriber so we don't have to keep querying the key in the table to get the value.
+     * @param key The parameter you want to get (slashes are allowed)
+     * @param backup The value to use if the key is missing
+     * @return The subscriber to get values from
+     */
+    public static IntegerSubscriber getNtSub(String key, int backup) {
+        IntegerTopic topic = NetworkTableInstance.getDefault().getIntegerTopic(checkKey(key));
+        IntegerPublisher pub = topic.publish();
+        pub.setDefault(backup);
+        IntegerSubscriber sub = topic.subscribe(backup);
+        if(!sub.exists()) {
+            pub.set(backup);
+        }
+        return sub;
+    }
+
+    /**
+     * This creates a NT subscriber so we don't have to keep querying the key in the table to get the value.
+     * @param key The parameter you want to get (slashes are allowed)
+     * @param backup The value to use if the key is missing
+     * @return The subscriber to get values from
+     */
+    public static DoubleSubscriber getNtSub(String key, double backup) {
+        DoubleTopic topic = NetworkTableInstance.getDefault().getDoubleTopic(checkKey(key));
+        DoublePublisher pub = topic.publish();
+        pub.setDefault(backup);
+        DoubleSubscriber sub = topic.subscribe(backup);
         if(!sub.exists()) {
             pub.set(backup);
         }

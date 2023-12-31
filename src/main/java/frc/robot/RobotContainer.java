@@ -4,6 +4,9 @@
 
 package frc.robot;
 
+import org.livoniawarriors.leds.LedSubsystem;
+import org.livoniawarriors.leds.RainbowLeds;
+import org.livoniawarriors.leds.TestLeds;
 import org.livoniawarriors.odometry.Odometry;
 import org.livoniawarriors.odometry.Pigeon2Gyro;
 import org.livoniawarriors.odometry.SimSwerveGyro;
@@ -30,6 +33,9 @@ import edu.wpi.first.wpilibj2.command.button.Trigger;
 public class RobotContainer {
     /** The container for the robot. Contains subsystems, OI devices, and commands. */
     private SwerveDriveTrain swerveDrive;
+    private Odometry odometry;
+    private LedSubsystem leds;
+
     private XboxController driverController;
 
     public RobotContainer() {
@@ -42,7 +48,8 @@ public class RobotContainer {
         //03064db7 = big buzz
 
         //subsystems used in all robots
-        Odometry odometry = new Odometry();
+        odometry = new Odometry();
+        leds = new LedSubsystem(0, 10);
 
         //build the robot based on the Rio ID of the robot
         if (Robot.isSimulation() || (serNum.equals("031b525b")) || (serNum.equals("03064db7"))) {
@@ -63,6 +70,7 @@ public class RobotContainer {
         SmartDashboard.putData("Wheels Diamond", new MoveWheels(swerveDrive, MoveWheels.WheelsDiamond()));
         SmartDashboard.putData("Drive Wheels Straight", new MoveWheels(swerveDrive, MoveWheels.DriveWheelsStraight()));
         SmartDashboard.putData("Drive Wheels Diamond", new MoveWheels(swerveDrive, MoveWheels.DriveWheelsDiamond()));
+        SmartDashboard.putData("Test Leds", new TestLeds(leds));
     }
 
     /**
@@ -77,6 +85,7 @@ public class RobotContainer {
     public void configureBindings() {
         //setup default commands that are used for driving
         swerveDrive.setDefaultCommand(new DriveXbox(swerveDrive, driverController));
+        leds.setDefaultCommand(new RainbowLeds(leds));
     }
 
     /**
