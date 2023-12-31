@@ -12,6 +12,7 @@ import com.pathplanner.lib.util.PPLibTelemetry;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.TimedRobot;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 
@@ -38,6 +39,7 @@ public class Robot extends TimedRobot {
         //internal logger class
         logger = new Logger();
         Logger.RegisterLoopTimes(this);
+        SmartDashboard.putData(CommandScheduler.getInstance());
 
         /* This is a fix from 2023 with a Rio2.  We took a very hard hit and the Rio went into brownout
          * protection.  That was fine.  But we stayed stuck in brownout protection throughout power cycles
