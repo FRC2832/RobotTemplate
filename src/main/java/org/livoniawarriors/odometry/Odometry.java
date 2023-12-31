@@ -6,11 +6,16 @@ import org.livoniawarriors.Logger;
 import org.livoniawarriors.UtilFunctions;
 import org.livoniawarriors.swerve.SwerveDriveTrain;
 
+import edu.wpi.first.math.Matrix;
+import edu.wpi.first.math.VecBuilder;
+import edu.wpi.first.math.estimator.SwerveDrivePoseEstimator;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.SwerveDriveOdometry;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
+import edu.wpi.first.math.numbers.N1;
+import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.networktables.BooleanSubscriber;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
@@ -23,7 +28,9 @@ public class Odometry extends SubsystemBase {
     public static final double FIELD_WIDTH_METERS = 8.014;
     
     IGyroHardware hardware;
+    double lastVisionTime;
     SwerveDriveOdometry odometry;
+    SwerveDrivePoseEstimator poseEstimator;
     SwerveDriveTrain drive;
     Pose2d robotPose;
     Pose2d startPose;
@@ -38,6 +45,7 @@ public class Odometry extends SubsystemBase {
         hardware = new BlankGyro();
         robotPose = new Pose2d(FIELD_LENGTH_METERS / 2, FIELD_WIDTH_METERS / 2, new Rotation2d());
         startPose = new Pose2d(FIELD_LENGTH_METERS / 2, FIELD_WIDTH_METERS / 2, new Rotation2d());
+        lastVisionTime = 0;
 
         field = new Field2d();
         resetPos = UtilFunctions.getNtSub("/Odometry/Reset Position", false);
@@ -47,15 +55,27 @@ public class Odometry extends SubsystemBase {
         Logger.RegisterSensor("Gyro Yaw", this::getGyroAngle);
         Logger.RegisterSensor("Gyro Pitch", this::getGyroPitch);
         Logger.RegisterSensor("Gyro Roll", this::getGyroRoll);
-        Logger.RegisterSensor("Gyro X Accel", ()->hardware.getXAccel());
-        Logger.RegisterSensor("Gyro Y Accel", ()->hardware.getYAccel());
-        Logger.RegisterSensor("Gyro Z Accel", ()->hardware.getZAccel());
+        Logger.RegisterSensor("Gyro X Accel", hardware::getXAccel);
+        Logger.RegisterSensor("Gyro Y Accel", hardware::getYAccel);
+        Logger.RegisterSensor("Gyro Z Accel", hardware::getZAccel);
     }
 
     public void setSwerveDrive(SwerveDriveTrain drive) {
         this.drive = drive;
         swervePositions = drive.getCornerLocations();
-        odometry = new SwerveDriveOdometry(drive.getKinematics(), getGyroRotation(), drive.getSwervePositions());
+        odometry = new SwerveDriveOdometry(
+            drive.getKinematics(), 
+            getGyroRotation(), 
+            drive.getSwervePositions());
+        poseEstimator = new SwerveDrivePoseEstimator(
+            drive.getKinematics(),
+            getGyroRotation(),
+            drive.getSwervePositions(),
+            startPose,
+            //TODO: Make these calibratable
+            VecBuilder.fill(0.1, 0.1, 0.1),
+            VecBuilder.fill(0.9, 0.9, 0.9)
+        );
     }
 
     public void setGyroHardware(IGyroHardware hardware) {
@@ -71,7 +91,9 @@ public class Odometry extends SubsystemBase {
         if(drive != null) {
             SwerveModulePosition[] states = drive.getSwervePositions();
             robotPose = odometry.update(heading, states);
+            poseEstimator.update(heading, states);
             field.setRobotPose(robotPose);
+            field.getObject("Vision Pose").setPose(poseEstimator.getEstimatedPosition());
 
             Pose2d[] swervePoses;
             if(plotCorners.get()) {
@@ -155,5 +177,13 @@ public class Odometry extends SubsystemBase {
 
     public double getGyroRoll() {
         return hardware.getRollAngle();
+    }
+
+    public void addVisionMeasurement(Pose2d pose, double timestamp) {
+        poseEstimator.addVisionMeasurement(pose, timestamp);
+    }
+
+    public void addVisionMeasurement(Pose2d pose, double timestamp, Matrix<N3, N1> stdDeviation) {
+        poseEstimator.addVisionMeasurement(pose, timestamp, stdDeviation);
     }
 }
