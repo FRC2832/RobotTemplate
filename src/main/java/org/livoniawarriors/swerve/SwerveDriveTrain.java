@@ -3,8 +3,6 @@ package org.livoniawarriors.swerve;
 import org.livoniawarriors.UtilFunctions;
 import org.livoniawarriors.odometry.Odometry;
 
-import com.ctre.phoenix.motorcontrol.ControlMode;
-
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -17,7 +15,6 @@ import edu.wpi.first.networktables.DoubleArrayPublisher;
 import edu.wpi.first.networktables.DoublePublisher;
 import edu.wpi.first.networktables.DoubleSubscriber;
 import edu.wpi.first.wpilibj.DriverStation;
-import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
@@ -39,7 +36,6 @@ public class SwerveDriveTrain extends SubsystemBase {
     private SwerveModuleState[] swerveTargets;
     private double gyroOffset = 0;
     private PIDController pidZero = new PIDController(0.15, 0.001, 0);
-    private PIDController[] turnPid;
     private SwerveModuleState[] currentState;
     private boolean optimize;
     private boolean resetZeroPid;
@@ -85,7 +81,6 @@ public class SwerveDriveTrain extends SubsystemBase {
         //initialize the swerve states
         swerveStates = new SwerveModulePosition[numWheels];
         swerveTargets = new SwerveModuleState[numWheels];
-        turnPid = new PIDController[numWheels];
         currentState = new SwerveModuleState[numWheels];
         wheelOffsetSetting = new DoubleSubscriber[numWheels];
         wheelCalcAngle = new DoublePublisher[numWheels];
@@ -96,7 +91,6 @@ public class SwerveDriveTrain extends SubsystemBase {
         for(int wheel = 0; wheel < numWheels; wheel++) {
             swerveStates[wheel] = new SwerveModulePosition();
             swerveTargets[wheel] = new SwerveModuleState();
-            turnPid[wheel] = new PIDController(5,1.8,0);
             currentState[wheel] = new SwerveModuleState();
             wheelOffsetSetting[wheel] = UtilFunctions.getSettingSub("/Swerve Drive/Wheel Offset " + moduleNames[wheel] + "_deg", 0);
             wheelCalcAngle[wheel] = UtilFunctions.getNtPub("/Swerve Drive/Module " + moduleNames[wheel] + "/Calc Angle_deg", 0);
@@ -133,15 +127,13 @@ public class SwerveDriveTrain extends SubsystemBase {
             currentState[wheel].angle = swerveStates[wheel].angle;
             currentState[wheel].speedMetersPerSecond = hardware.getCornerSpeed(wheel);
 
-            wheelCalcAngle[wheel].set(swerveStates[wheel].angle.getDegrees());
+            wheelCalcAngle[wheel].set(angle);
+            hardware.setCorrectedAngle(wheel, angle);
         }
 
         //when we are disabled, reset the turn pids as we don't want to act on the "error" when reenabled
         boolean curTeleop = DriverStation.isTeleopEnabled();
         if(lastTeleop == false && curTeleop == true || resetZeroPid) {
-            for (PIDController pid : turnPid) {
-                pid.reset();
-            }
             gyroOffset = currentHeading.getDegrees();
             fieldOffset = currentHeading;
             pidZero.reset();
@@ -159,7 +151,7 @@ public class SwerveDriveTrain extends SubsystemBase {
     }
 
     public void SwerveDrive(double xSpeed, double ySpeed, double turn, boolean fieldOriented) {
-        // ask the kinematics to determine our swerve command
+        //ask the kinematics to determine our swerve command
         ChassisSpeeds speeds;
 
         if (Math.abs(turn) > 0.1) {
@@ -176,17 +168,16 @@ public class SwerveDriveTrain extends SubsystemBase {
         } else {
             speeds = new ChassisSpeeds(xSpeed, ySpeed, turn);
         }
-        
+
+        //calculate the states from the speeds
+        SwerveModuleState[] requestStates = kinematics.toSwerveModuleStates(speeds);
+        //sometime the Kinematics spits out too fast of speeds, so this will fix this
+        SwerveDriveKinematics.desaturateWheelSpeeds(requestStates, maxSpeed);
+
         //log the request
         swerveXSpeed.set(xSpeed);
         swerveYSpeed.set(ySpeed);
         swerveOmega.set(Math.toDegrees(turn));
-
-        //calculate the states from the speeds
-        SwerveModuleState[] requestStates = kinematics.toSwerveModuleStates(speeds);
-        // sometime the Kinematics spits out too fast of speeds, so this will fix this
-        SwerveDriveKinematics.desaturateWheelSpeeds(requestStates, maxSpeed);
-
         for(int i=0; i<requestStates.length; i++) {
             wheelRequestAngle[i].set(requestStates[i].angle.getDegrees());
             wheelRequestSpeed[i].set(requestStates[i].speedMetersPerSecond);
@@ -196,44 +187,20 @@ public class SwerveDriveTrain extends SubsystemBase {
         if(optimize) {
             requestStates = optimizeSwerve(requestStates, currentState, true);
         }
-
-        // command each swerve module
-        for (int i = 0; i < requestStates.length; i++) {
-            //turn software PID
-            if (Math.abs(swerveStates[i].angle.minus(requestStates[i].angle).getDegrees()) < 1) {
-                //reset the PID to remove all the I term error so we don't overshoot and rebound
-                turnPid[i].reset();
-            }
-            double turnVolts = -turnPid[i].calculate(swerveStates[i].angle.getRadians(), requestStates[i].angle.getRadians());
-            hardware.setTurnCommand(i, ControlMode.PercentOutput, turnVolts / RobotController.getBatteryVoltage());
-
-            // velocity drive mode
-            hardware.setDriveCommand(i, ControlMode.Velocity, requestStates[i].speedMetersPerSecond);
-
-            wheelCommandAngle[i].set(requestStates[i].angle.getDegrees());
-            wheelCommandSpeed[i].set(requestStates[i].speedMetersPerSecond);
-        }
-        swerveTargets = requestStates;
+        setCornerStates(requestStates);
     }
 
     public void setWheelCommand(SwerveModuleState[] requestStates) {
         resetZeroPid = true;
-        swerveTargets = requestStates;
-        for(int i=0; i<requestStates.length; i++) {
-            if(optimize) {
-                requestStates = optimizeSwerve(requestStates, currentState, false);
-            }
-                
-            double volts = -turnPid[i].calculate(swerveStates[i].angle.getRadians(),requestStates[i].angle.getRadians());
-            hardware.setDriveCommand(i, ControlMode.Velocity, requestStates[i].speedMetersPerSecond);
-            hardware.setTurnCommand(i, ControlMode.PercentOutput, volts / RobotController.getBatteryVoltage());
 
-            wheelRequestAngle[i].set(requestStates[i].angle.getDegrees());
-            wheelRequestSpeed[i].set(requestStates[i].speedMetersPerSecond);
+        //command the hardware
+        if(optimize) {
+            requestStates = optimizeSwerve(requestStates, currentState, false);
         }
+        setCornerStates(requestStates);
 
-        ChassisSpeeds speeds = kinematics.toChassisSpeeds(requestStates);
         //log the request
+        ChassisSpeeds speeds = kinematics.toChassisSpeeds(requestStates);
         swerveXSpeed.set(speeds.vxMetersPerSecond);
         swerveYSpeed.set(speeds.vyMetersPerSecond);
         swerveOmega.set(Math.toDegrees(speeds.omegaRadiansPerSecond));
@@ -312,6 +279,7 @@ public class SwerveDriveTrain extends SubsystemBase {
     public void stopWheels() {
         SwerveDrive(0,0,0);
     }
+
     public void resetFieldOriented() {
         fieldOffset = odometry.getPose().getRotation().minus(odometry.getGyroRotation());
     }
@@ -362,5 +330,16 @@ public class SwerveDriveTrain extends SubsystemBase {
 
     public double getMinSpeed() {
         return minSpeed;
+    }
+
+    private void setCornerStates(SwerveModuleState[] states) {
+        swerveTargets = states;
+        for(int wheel = 0; wheel<states.length; wheel++) {
+            hardware.setCornerState(wheel, states[wheel]);
+
+            //log the commands
+            wheelCommandAngle[wheel].set(states[wheel].angle.getDegrees());
+            wheelCommandSpeed[wheel].set(states[wheel].speedMetersPerSecond);
+        }
     }
 }

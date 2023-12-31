@@ -2,6 +2,7 @@ package org.livoniawarriors.swerve;
 
 import com.ctre.phoenix.motorcontrol.ControlMode;
 
+import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
@@ -13,6 +14,7 @@ import edu.wpi.first.wpilibj.simulation.FlywheelSim;
 public class SwerveDriveSim implements ISwerveDriveIo {
     private double absAngle[];
     private double turnAngle[];
+    private double correctedAngle[];
     private double driveSpeed[];
     private double driveDist[];
     private ControlMode driveCommand[];
@@ -45,6 +47,7 @@ public class SwerveDriveSim implements ISwerveDriveIo {
         int numWheels = swervePositions.length;
         absAngle = new double[numWheels];
         turnAngle = new double[numWheels];
+        correctedAngle = new double[numWheels];
         driveSpeed = new double[numWheels];
         driveDist = new double[numWheels];
 
@@ -64,7 +67,7 @@ public class SwerveDriveSim implements ISwerveDriveIo {
             //scale factor for hardware PID to software PID
             //360/2048 is 360 degrees per rev/encoder counts per rev divided by gear ratio
             var k = (360f/2048) * (7f/150);
-            turningPIDController[i] = new PIDController(0.4 * k, 0.0005 * k, 0 * k, 0.001);
+            turningPIDController[i] = new PIDController(1.5 * k, 0.0005 * k, 0 * k, 0.001);
         }
     }
     
@@ -90,11 +93,9 @@ public class SwerveDriveSim implements ISwerveDriveIo {
             drivePower[i] = 0;
 
             //process turn command
-            double deltaAngle;
             if(turnCommand[i] == ControlMode.Position) {
-                deltaAngle = -turnPower[i];
-                for(var loops =0; loops < TimedRobot.kDefaultPeriod / 0.001; loops++) {
-                    double turnOutput = turningPIDController[i].calculate(turnAngle[i], deltaAngle);
+                for(var loops = 0; loops < TimedRobot.kDefaultPeriod / 0.001; loops++) {
+                    double turnOutput = turningPIDController[i].calculate(correctedAngle[i], turnPower[i]);
                     //update the sensor values
                     turnAngle[i] += turnOutput;
                     absAngle[i] += turnOutput;
@@ -106,7 +107,6 @@ public class SwerveDriveSim implements ISwerveDriveIo {
                 absAngle[i] += turnOutput;
                 turnPower[i] = 0;
             } else {
-                deltaAngle = 0;
             }
 
             //reset turn command back to zero
@@ -145,24 +145,13 @@ public class SwerveDriveSim implements ISwerveDriveIo {
         driveCommand[wheel] = ControlMode.Velocity;
         drivePower[wheel] = swerveModuleState.speedMetersPerSecond;
         turnCommand[wheel] = ControlMode.Position;
-        turnPower[wheel] = swerveModuleState.angle.getDegrees();
+        //we need the request to be within the boundaries, not wrap around the 180 point
+        turnPower[wheel] = MathUtil.inputModulus(swerveModuleState.angle.getDegrees(), correctedAngle[wheel]-180, correctedAngle[wheel]+180);
     }
 
     @Override
     public double getCornerDistance(int wheel) {
         return driveDist[wheel];
-    }
-
-    @Override
-    public void setDriveCommand(int wheel, ControlMode mode, double output) {
-        driveCommand[wheel] = mode;
-        drivePower[wheel] = output;
-    }
-
-    @Override
-    public void setTurnCommand(int wheel, ControlMode mode, double output) {
-        turnCommand[wheel] = mode;
-        turnPower[wheel] = output;
     }
 
     @Override
@@ -172,7 +161,11 @@ public class SwerveDriveSim implements ISwerveDriveIo {
 
     @Override
     public String[] getModuleNames() {
-        // TODO Auto-generated method stub
         return moduleNames;
+    }
+
+    @Override
+    public void setCorrectedAngle(int wheel, double angle) {
+        correctedAngle[wheel] = angle;
     }
 }

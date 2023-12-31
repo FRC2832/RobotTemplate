@@ -1,7 +1,5 @@
 package org.livoniawarriors.swerve;
 
-import com.ctre.phoenix.motorcontrol.ControlMode;
-
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
 
@@ -39,9 +37,7 @@ public  interface ISwerveDriveIo {
      */
     double getCornerDistance(int wheel);
 
+    void setCorrectedAngle(int wheel, double angle);
+
     void setCornerState(int wheel, SwerveModuleState swerveModuleState);
-
-    void setDriveCommand(int wheel, ControlMode mode, double output);
-
-    void setTurnCommand(int wheel, ControlMode mode, double output);
 }
