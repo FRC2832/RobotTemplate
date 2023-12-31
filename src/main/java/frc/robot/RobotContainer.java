@@ -54,7 +54,7 @@ public class RobotContainer {
         //build the robot based on the Rio ID of the robot
         if (Robot.isSimulation() || (serNum.equals("031b525b")) || (serNum.equals("03064db7"))) {
             //either buzz or simulation
-            swerveDrive = new SwerveDriveTrain(new SwerveDriveSim(), odometry::getGyroRotation);
+            swerveDrive = new SwerveDriveTrain(new SwerveDriveSim(), odometry);
             odometry.setGyroHardware(new SimSwerveGyro(swerveDrive));
         } else {
             //competition robot

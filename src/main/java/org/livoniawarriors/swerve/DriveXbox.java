@@ -34,7 +34,7 @@ public class DriveXbox extends Command {
     @Override
     public void execute() {
         //driver clicked field reset stick
-        if (cont.getLeftBumperPressed()) {
+        if (cont.getLeftStickButtonPressed()) {
             drive.resetFieldOriented();
         }
 

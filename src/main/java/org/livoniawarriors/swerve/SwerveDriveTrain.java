@@ -1,8 +1,7 @@
 package org.livoniawarriors.swerve;
 
-import java.util.function.Supplier;
-
 import org.livoniawarriors.UtilFunctions;
+import org.livoniawarriors.odometry.Odometry;
 
 import com.ctre.phoenix.motorcontrol.ControlMode;
 
@@ -48,7 +47,7 @@ public class SwerveDriveTrain extends SubsystemBase {
     private double maxSpeed;
     private Rotation2d currentHeading;
     private Rotation2d fieldOffset;
-    private Supplier<Rotation2d> gyroSupplier;
+    private Odometry odometry;
     private boolean lastTeleop;
 
     //input settings
@@ -68,10 +67,10 @@ public class SwerveDriveTrain extends SubsystemBase {
     private DoubleArrayPublisher swerveStatePub;
     private DoubleArrayPublisher swerveRequestPub;
 
-    public SwerveDriveTrain(ISwerveDriveIo hSwerveDriveIo, Supplier<Rotation2d> gyroSupplier) {
+    public SwerveDriveTrain(ISwerveDriveIo hSwerveDriveIo, Odometry odometry) {
         super();
         this.hardware = hSwerveDriveIo;
-        this.gyroSupplier = gyroSupplier;
+        this.odometry = odometry;
         optimize = true;
         resetZeroPid = false;
         int numWheels = hardware.getCornerLocations().length;
@@ -122,7 +121,7 @@ public class SwerveDriveTrain extends SubsystemBase {
     @Override
     public void periodic() {
         hardware.updateInputs();
-        currentHeading = gyroSupplier.get();
+        currentHeading = odometry.getGyroRotation();
 
         //read the swerve corner state
         for(int wheel = 0; wheel < swerveStates.length; wheel++) {
@@ -314,7 +313,7 @@ public class SwerveDriveTrain extends SubsystemBase {
         SwerveDrive(0,0,0);
     }
     public void resetFieldOriented() {
-        fieldOffset = currentHeading;
+        fieldOffset = odometry.getPose().getRotation().minus(odometry.getGyroRotation());
     }
 
     public SwerveDriveKinematics getKinematics() {
