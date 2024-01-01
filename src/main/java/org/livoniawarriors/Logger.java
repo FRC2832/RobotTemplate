@@ -26,7 +26,6 @@ import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj.DataLogManager;
 import edu.wpi.first.wpilibj.DriverStation;
-import edu.wpi.first.wpilibj.Notifier;
 import edu.wpi.first.wpilibj.PneumaticHub;
 import edu.wpi.first.wpilibj.PowerDistribution;
 import edu.wpi.first.wpilibj.RobotController;
@@ -39,7 +38,6 @@ import frc.robot.Robot;
 public class Logger implements Runnable {
     private final double VOLTS_PER_PSI = 1.931/100; //2.431V at 100psi
 
-    private Notifier notify;
     private static HashMap<String,Object> items = new HashMap<String,Object>();
     private static PowerDistribution pdp;
     private static String[] pdpNames;
@@ -100,11 +98,8 @@ public class Logger implements Runnable {
     }
 
     public void start() {
-        //register with the robot to schedule our task
-        notify = new Notifier(this);
         //we run at 100ms rate because of all the CAN traffic, especially with the PDP log channels
-        notify.startPeriodic(0.1);
-        notify.setName("Logging");
+        UtilFunctions.addPeriodic(this, 0.1, 0);
     }
 
     public static void RegisterTalon(String name, BaseTalon talon) {
