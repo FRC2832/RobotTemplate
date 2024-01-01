@@ -69,14 +69,14 @@ public class Logger implements Runnable {
         DriverStation.startDataLog(log);
 
         //create our logging table references
-        canStatusTable = NetworkTableInstance.getDefault().getTable("CAN_Status");
-        currentTable = NetworkTableInstance.getDefault().getTable("Motor_Currents");
-        tempTable = NetworkTableInstance.getDefault().getTable("Motor_Temps");
-        commandTable = NetworkTableInstance.getDefault().getTable("Device_Commands");
-        faultTable = NetworkTableInstance.getDefault().getTable("Device_Faults");
-        stickyTable = NetworkTableInstance.getDefault().getTable("Device_Sticky_Faults");
+        canStatusTable = NetworkTableInstance.getDefault().getTable("CAN Status");
+        currentTable = NetworkTableInstance.getDefault().getTable("Motor Currents");
+        tempTable = NetworkTableInstance.getDefault().getTable("Motor Temps");
+        commandTable = NetworkTableInstance.getDefault().getTable("Device Commands");
+        faultTable = NetworkTableInstance.getDefault().getTable("Device Faults");
+        stickyTable = NetworkTableInstance.getDefault().getTable("Device Sticky Faults");
         sensorTable = NetworkTableInstance.getDefault().getTable("Sensors");
-        taskTimings = NetworkTableInstance.getDefault().getTable("Task_Timings_ms");
+        taskTimings = NetworkTableInstance.getDefault().getTable("Task Timings (ms)");
         SmartDashboard.putBoolean("Clear Faults", false);
 
         // Set the scheduler to log Shuffleboard events for command initialize,

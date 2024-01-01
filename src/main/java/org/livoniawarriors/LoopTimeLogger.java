@@ -70,7 +70,7 @@ public class LoopTimeLogger implements Runnable {
                 entry.setDouble(time);
                 totalTime += time;
             }
-            table.getEntry("Loop_Time").setDouble(totalTime);
+            table.getEntry("Loop Time").setDouble(totalTime);
         }
 
         if(cmdEpochs != null) {
@@ -81,7 +81,7 @@ public class LoopTimeLogger implements Runnable {
                 entry.setDouble(time);
                 cmdTime += time;
             }
-            table.getEntry("Scheduler_Time").setDouble(cmdTime);
+            table.getEntry("Scheduler Time").setDouble(cmdTime);
         }
     }
 }

@@ -92,22 +92,22 @@ public class SwerveDriveTrain extends SubsystemBase {
             swervePositions[wheel] = new SwerveModulePosition();
             swerveTargets[wheel] = new SwerveModuleState();
             swerveStates[wheel] = new SwerveModuleState();
-            wheelOffsetSetting[wheel] = UtilFunctions.getSettingSub("/Swerve Drive/Wheel Offset " + moduleNames[wheel] + "_deg", 0);
-            wheelCalcAngle[wheel] = UtilFunctions.getNtPub("/Swerve Drive/Module " + moduleNames[wheel] + "/Calc Angle_deg", 0);
-            wheelCommandAngle[wheel] = UtilFunctions.getNtPub("/Swerve Drive/Module " + moduleNames[wheel] + "/Command Angle_deg", 0);
-            wheelRequestAngle[wheel] = UtilFunctions.getNtPub("/Swerve Drive/Module " + moduleNames[wheel] + "/Request Angle_deg", 0);
-            wheelCommandSpeed[wheel] = UtilFunctions.getNtPub("/Swerve Drive/Module " + moduleNames[wheel] + "/Command Speed_mps", 0);
-            wheelRequestSpeed[wheel] = UtilFunctions.getNtPub("/Swerve Drive/Module " + moduleNames[wheel] + "/Request Speed_mps", 0);
+            wheelOffsetSetting[wheel] = UtilFunctions.getSettingSub("/Swerve Drive/Wheel Offset " + moduleNames[wheel] + " (deg)", 0);
+            wheelCalcAngle[wheel] = UtilFunctions.getNtPub("/Swerve Drive/Module " + moduleNames[wheel] + "/Calc Angle (deg)", 0);
+            wheelCommandAngle[wheel] = UtilFunctions.getNtPub("/Swerve Drive/Module " + moduleNames[wheel] + "/Command Angle (deg)", 0);
+            wheelRequestAngle[wheel] = UtilFunctions.getNtPub("/Swerve Drive/Module " + moduleNames[wheel] + "/Request Angle (deg)", 0);
+            wheelCommandSpeed[wheel] = UtilFunctions.getNtPub("/Swerve Drive/Module " + moduleNames[wheel] + "/Command Speed (mps)", 0);
+            wheelRequestSpeed[wheel] = UtilFunctions.getNtPub("/Swerve Drive/Module " + moduleNames[wheel] + "/Request Speed (mps)", 0);
         }
 
         /** How fast we want the driver to go during normal operation in m/s */
-        driverMaxSpeed = UtilFunctions.getSettingSub("/Swerve Drive/Max Driver Speed_mps", 3);
+        driverMaxSpeed = UtilFunctions.getSettingSub("/Swerve Drive/Max Driver Speed (mps)", 3);
         /** How fast we want the driver to turn during normal operation in deg/s */
-        driverMaxOmega = UtilFunctions.getSettingSub("/Swerve Drive/Max Driver Omega_dps", 625);   //1.8 * Pi rad/sec
+        driverMaxOmega = UtilFunctions.getSettingSub("/Swerve Drive/Max Driver Omega (dps)", 625);   //1.8 * Pi rad/sec
 
-        swerveXSpeed = UtilFunctions.getNtPub("/Swerve Drive/X Speed_mps", 0);
-        swerveYSpeed = UtilFunctions.getNtPub("/Swerve Drive/Y Speed_mps", 0);
-        swerveOmega = UtilFunctions.getNtPub("/Swerve Drive/Omega_dps", 0);
+        swerveXSpeed = UtilFunctions.getNtPub("/Swerve Drive/X Speed (mps)", 0);
+        swerveYSpeed = UtilFunctions.getNtPub("/Swerve Drive/Y Speed (mps)", 0);
+        swerveOmega = UtilFunctions.getNtPub("/Swerve Drive/Omega (dps)", 0);
         swerveStatePub = UtilFunctions.getNtPub("/Swerve Drive/Module States", new double[0]);
         swerveRequestPub = UtilFunctions.getNtPub("/Swerve Drive/Module Requests", new double[0]);
     }
