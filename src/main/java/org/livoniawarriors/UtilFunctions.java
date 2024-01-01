@@ -1,6 +1,8 @@
 package org.livoniawarriors;
 
 import java.lang.reflect.Field;
+import java.util.EnumSet;
+import java.util.function.Consumer;
 
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.networktables.BooleanPublisher;
@@ -14,6 +16,7 @@ import edu.wpi.first.networktables.DoubleTopic;
 import edu.wpi.first.networktables.IntegerPublisher;
 import edu.wpi.first.networktables.IntegerSubscriber;
 import edu.wpi.first.networktables.IntegerTopic;
+import edu.wpi.first.networktables.NetworkTableEvent;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj.Preferences;
 import edu.wpi.first.wpilibj.RobotBase;
@@ -206,6 +209,24 @@ public class UtilFunctions {
         DoubleArrayPublisher pub = topic.publish();
         pub.setDefault(initValue);
         return pub;
+    }
+
+    /**
+     * Add a event listener for when a network table value changes remotely.
+     * @param key What network table key to monitor
+     * @param listener Function to run when the value changes.  Could be a function taking a NetworkTableEvent
+     * parameter or a lambda function.
+     * @return Handle that can be used in NetworkTableInstance.getDefault().removeListener(x)
+     */
+    public static int onNtChange(String key, Consumer<NetworkTableEvent> listener) {
+        DoubleTopic topic = NetworkTableInstance.getDefault().getDoubleTopic(checkKey("/Preferences/" + key));
+        DoubleSubscriber sub = topic.subscribe(0);
+
+        // add a listener to only value changes on the Y subscriber
+        return NetworkTableInstance.getDefault().addListener(
+            sub,
+            EnumSet.of(NetworkTableEvent.Kind.kValueAll),
+            listener);
     }
 
     private static String checkKey(String key) {
