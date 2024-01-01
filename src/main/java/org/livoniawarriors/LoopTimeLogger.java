@@ -7,7 +7,6 @@ import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Tracer;
 import edu.wpi.first.wpilibj.Watchdog;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import frc.robot.Robot;
 
@@ -24,7 +23,7 @@ public class LoopTimeLogger implements Runnable {
          * 
          * You don't get the time in updating SmartDashboard, LiveWindow, Shuffleboard, and Simulation
          */
-        SmartDashboard.postListenerTask(this);
+        UtilFunctions.addPeriodic(this, Robot.kDefaultPeriod, 0);
         this.table = table;
         try{
             //read the robot class for the watchdog
@@ -84,8 +83,5 @@ public class LoopTimeLogger implements Runnable {
             }
             table.getEntry("Scheduler_Time").setDouble(cmdTime);
         }
-
-        //restart the task each loop it runs
-        SmartDashboard.postListenerTask(this);
     }
 }
