@@ -9,7 +9,9 @@ import com.ctre.phoenix.motorcontrol.can.TalonSRXConfiguration;
 import com.revrobotics.CANSparkMax;
 import com.revrobotics.SparkMaxPIDController;
 
+import edu.wpi.first.networktables.DoubleEntry;
 import edu.wpi.first.networktables.NetworkTableEvent;
+import frc.robot.Robot;
 
 /**
  * This class lets us configure PIDs using our units that make sense.  The input units should be 
@@ -140,19 +142,27 @@ public class PidConstants {
         loadFromNT();
     }
 
-    public void onChange(Consumer<NetworkTableEvent> listener) {
-        UtilFunctions.onNtChange(key + "P", listener);
-        UtilFunctions.onNtChange(key + "I", listener);
-        UtilFunctions.onNtChange(key + "D", listener);
-        UtilFunctions.onNtChange(key + "F", listener);
-        UtilFunctions.onNtChange(key + "S", listener);
-        UtilFunctions.onNtChange(key + "G", listener);
-        UtilFunctions.onNtChange(key + "V", listener);
-        UtilFunctions.onNtChange(key + "A", listener);
-        UtilFunctions.onNtChange(key + "iZone", listener);
-        UtilFunctions.onNtChange(key + "iError", listener);
-        UtilFunctions.onNtChange(key + "MaxVel", listener);
-        UtilFunctions.onNtChange(key + "MaxAccel", listener);
+    public void onChange(Runnable listener) {
+        DoubleEntry subP = NtHelper.getSetting(key + "P", 0.);
+        DoubleEntry subI = NtHelper.getEntry(key + "I", 0.);
+        DoubleEntry subD = NtHelper.getEntry(key + "D", 0.);
+        DoubleEntry subF = NtHelper.getEntry(key + "F", 0.);
+        DoubleEntry subS = NtHelper.getEntry(key + "S", 0.);
+        DoubleEntry subG = NtHelper.getEntry(key + "G", 0.);
+        DoubleEntry subV = NtHelper.getEntry(key + "V", 0.);
+        DoubleEntry subA = NtHelper.getEntry(key + "A", 0.);
+        DoubleEntry subiZone = NtHelper.getEntry(key + "iZone", 0.);
+        DoubleEntry subiError = NtHelper.getEntry(key + "iError", 0.);
+        DoubleEntry subVelMax = NtHelper.getEntry(key + "MaxVel", 0.);
+        DoubleEntry subAccelMax = NtHelper.getEntry(key + "MaxAccel", 0.);
+
+        UtilFunctions.addPeriodic(() -> {
+            if(subP.get() != kP) {
+                var value = subP.get();
+                loadFromNT();
+                listener.run();
+            }
+        }, Robot.kDefaultPeriod, 0);
     }
 
     public void loadFromNT() {

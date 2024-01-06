@@ -1,5 +1,7 @@
 package org.livoniawarriors.swerve;
 
+import org.livoniawarriors.NtHelper;
+import org.livoniawarriors.PidConstants;
 import org.livoniawarriors.UtilFunctions;
 import org.livoniawarriors.odometry.Odometry;
 
@@ -12,6 +14,7 @@ import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
 import edu.wpi.first.networktables.DoubleArrayPublisher;
+import edu.wpi.first.networktables.DoubleEntry;
 import edu.wpi.first.networktables.DoublePublisher;
 import edu.wpi.first.networktables.DoubleSubscriber;
 import edu.wpi.first.wpilibj.DriverStation;
@@ -35,7 +38,8 @@ public class SwerveDriveTrain extends SubsystemBase {
     private SwerveModulePosition[] swervePositions;
     private SwerveModuleState[] swerveTargets;
     private double gyroOffset = 0;
-    private PIDController pidZero = new PIDController(0.15, 0.001, 0);
+    private PIDController pidZero;
+    private PidConstants pidConstants;
     private SwerveModuleState[] swerveStates;
     private boolean optimize;
     private boolean resetZeroPid;
@@ -52,7 +56,7 @@ public class SwerveDriveTrain extends SubsystemBase {
     private DoubleSubscriber[] wheelOffsetSetting;
 
     //output data
-    private DoublePublisher[] wheelCalcAngle;
+    private DoubleEntry[] wheelCalcAngle;
     private DoublePublisher[] wheelCommandAngle;
     private DoublePublisher[] wheelRequestAngle;
     private DoublePublisher[] wheelCommandSpeed;
@@ -77,13 +81,18 @@ public class SwerveDriveTrain extends SubsystemBase {
 
         //initialize the corner locations
         kinematics = new SwerveDriveKinematics(hSwerveDriveIo.getCornerLocations());
-        
+
+        //initialize the pid zeroing
+        pidConstants = new PidConstants("/Swerve Drive/Zeroing PID");
+        pidConstants.onChange(() -> initPidZero());  //ignore the event here, we don't care what caused the re-init
+        initPidZero();
+
         //initialize the swerve states
         swervePositions = new SwerveModulePosition[numWheels];
         swerveTargets = new SwerveModuleState[numWheels];
         swerveStates = new SwerveModuleState[numWheels];
         wheelOffsetSetting = new DoubleSubscriber[numWheels];
-        wheelCalcAngle = new DoublePublisher[numWheels];
+        wheelCalcAngle = new DoubleEntry[numWheels];
         wheelCommandAngle = new DoublePublisher[numWheels];
         wheelRequestAngle = new DoublePublisher[numWheels];
         wheelCommandSpeed = new DoublePublisher[numWheels];
@@ -93,7 +102,7 @@ public class SwerveDriveTrain extends SubsystemBase {
             swerveTargets[wheel] = new SwerveModuleState();
             swerveStates[wheel] = new SwerveModuleState();
             wheelOffsetSetting[wheel] = UtilFunctions.getSettingSub("/Swerve Drive/Wheel Offset " + moduleNames[wheel] + " (deg)", 0);
-            wheelCalcAngle[wheel] = UtilFunctions.getNtPub("/Swerve Drive/Module " + moduleNames[wheel] + "/Calc Angle (deg)", 0);
+            wheelCalcAngle[wheel] = NtHelper.getEntry("/Swerve Drive/Module " + moduleNames[wheel] + "/Calc Angle (deg)", 0.);
             wheelCommandAngle[wheel] = UtilFunctions.getNtPub("/Swerve Drive/Module " + moduleNames[wheel] + "/Command Angle (deg)", 0);
             wheelRequestAngle[wheel] = UtilFunctions.getNtPub("/Swerve Drive/Module " + moduleNames[wheel] + "/Request Angle (deg)", 0);
             wheelCommandSpeed[wheel] = UtilFunctions.getNtPub("/Swerve Drive/Module " + moduleNames[wheel] + "/Command Speed (mps)", 0);
@@ -144,6 +153,11 @@ public class SwerveDriveTrain extends SubsystemBase {
         PushSwerveStates(swerveStates,swerveTargets);
         minSpeed = UtilFunctions.getSetting(MIN_SPEED_KEY, 0.5);
         maxSpeed = UtilFunctions.getSetting(MAX_SPEED_KEY, 5);
+    }
+
+    private void initPidZero() {
+        pidZero = new PIDController(pidConstants.kP, pidConstants.kI, pidConstants.kD);
+        System.out.println("PID Constants changed");
     }
 
     /**
