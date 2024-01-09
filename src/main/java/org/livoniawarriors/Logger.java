@@ -35,6 +35,7 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import frc.robot.Robot;
 
+@SuppressWarnings("removal")
 public class Logger implements Runnable {
     private final double VOLTS_PER_PSI = 1.931/100; //2.431V at 100psi
 

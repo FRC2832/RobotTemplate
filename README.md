@@ -16,3 +16,5 @@ Robot logging is on by default, we use standard [WpiLog](https://docs.wpilib.org
 
 Notes:
 We require both Phoenix libraries 5 and 6 for the robot.  5 is needed for older CTRE device support like the TalonSrx module.
+
+We had to add a bunch of @SuppressWarnings("removal") to some of the legacy interfaces, as it looks like some of the CanSparkMax and TalonFX objects are changing for 2025.  It is do we want to use the new libraries, or use what we know works?

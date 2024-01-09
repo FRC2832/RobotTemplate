@@ -15,6 +15,7 @@ import edu.wpi.first.networktables.NetworkTableEvent;
  * This class lets us configure PIDs using our units that make sense.  The input units should be 
  * something like meters or degrees, and the output would be in volts, with max as 12V.
  */
+@SuppressWarnings("removal")
 public class PidConstants {
     private String key;
 

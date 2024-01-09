@@ -140,6 +140,19 @@ public class Odometry extends SubsystemBase {
         }
     }
 
+    /**
+     * Supplier that determines if paths should be flipped to the other side of the field. This will maintain a global blue alliance origin.
+     * @return If we need to flip
+     */
+    public boolean shouldFlipAlliance() {
+        Optional<Alliance> alliance = DriverStation.getAlliance();
+        if (alliance.isPresent() && alliance.get() == Alliance.Red) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
     public void setStartingPose(Pose2d pose) {
         startPose = flipAlliance(pose);
         resetPose(startPose);

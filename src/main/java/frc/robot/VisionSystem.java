@@ -46,9 +46,8 @@ public class VisionSystem extends SubsystemBase {
         super();
         this.odometry = odometry;
         simInit = false;
-        // The parameter for loadFromResource() will be different depending on the game.
         try {
-            aprilTagFieldLayout = AprilTagFieldLayout.loadFromResource(AprilTagFields.k2023ChargedUp.m_resourceFile);
+            aprilTagFieldLayout = AprilTagFieldLayout.loadFromResource(AprilTagFields.kDefaultField.m_resourceFile);
         } catch (IOException e) {
             // should never fail, as WpiLib always provides this file
         }
@@ -82,8 +81,8 @@ public class VisionSystem extends SubsystemBase {
             visionSim.addAprilTags(aprilTagFieldLayout);
             // Create simulated camera properties. These can be set to mimic your actual camera.
             var cameraProp = new SimCameraProperties();
-            cameraProp.setCalibration(960, 720, Rotation2d.fromDegrees(90));
-            cameraProp.setCalibError(0.35, 0.10);
+            cameraProp.setCalibration(1280, 720, Rotation2d.fromDegrees(111));
+            cameraProp.setCalibError(0.37, 0.13);
             cameraProp.setFPS(15);
             cameraProp.setAvgLatencyMs(50);
             cameraProp.setLatencyStdDevMs(15);

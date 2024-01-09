@@ -17,6 +17,7 @@ import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
 import edu.wpi.first.wpilibj.RobotController;
 
+@SuppressWarnings("removal")
 public class SwerveHw23 implements ISwerveDriveIo {
     //measuring the robot, we got 11114 counts/90*, the theoretical amount is 10971.428/90* (150/7:1 gear ratio, 2048 counts/rev)
     private final double COUNTS_PER_DEGREE = 121.9; //using theoretical amount

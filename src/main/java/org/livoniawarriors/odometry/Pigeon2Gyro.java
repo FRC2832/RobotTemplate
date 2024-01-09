@@ -2,6 +2,7 @@ package org.livoniawarriors.odometry;
 
 import com.ctre.phoenix.sensors.Pigeon2;
 
+@SuppressWarnings("removal")
 public class Pigeon2Gyro implements IGyroHardware {
     private Pigeon2 pigeon;
     private double[] ypr_deg;
