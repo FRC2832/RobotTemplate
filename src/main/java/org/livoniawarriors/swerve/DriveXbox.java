@@ -10,7 +10,7 @@ import edu.wpi.first.wpilibj2.command.Command;
  * Drive the robot with xbox controller 
  */
 public class DriveXbox extends Command {
-    private SwerveDriveTrain drive;
+    private ISwerveDriveIo drive;
     private XboxController cont;
     private DoubleSubscriber deadband;
 
@@ -19,7 +19,7 @@ public class DriveXbox extends Command {
      * @param drive Drivetrain to command
      * @param cont Controller to read from
      */
-    public DriveXbox(SwerveDriveTrain drive, XboxController cont) {
+    public DriveXbox(ISwerveDriveIo drive, XboxController cont) {
         this.drive = drive;
         this.cont = cont;
         deadband = UtilFunctions.getSettingSub("DriveXbox/Deadband", 0.13);

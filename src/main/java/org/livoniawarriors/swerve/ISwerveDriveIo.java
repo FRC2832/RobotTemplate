@@ -2,8 +2,9 @@ package org.livoniawarriors.swerve;
 
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
+import edu.wpi.first.wpilibj2.command.Subsystem;
 
-public  interface ISwerveDriveIo {
+public  interface ISwerveDriveIo extends Subsystem {
     void updateInputs();
     Translation2d[] getCornerLocations();
     String[] getModuleNames();

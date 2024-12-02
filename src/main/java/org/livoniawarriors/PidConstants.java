@@ -2,12 +2,14 @@ package org.livoniawarriors;
 
 import java.util.function.Consumer;
 
-import com.ctre.phoenix.motorcontrol.can.TalonFX;
-import com.ctre.phoenix.motorcontrol.can.TalonFXConfiguration;
 import com.ctre.phoenix.motorcontrol.can.TalonSRX;
 import com.ctre.phoenix.motorcontrol.can.TalonSRXConfiguration;
-import com.revrobotics.CANSparkMax;
-import com.revrobotics.SparkMaxPIDController;
+import com.revrobotics.spark.SparkBase;
+import com.revrobotics.spark.SparkMax;
+import com.revrobotics.spark.config.ClosedLoopConfig;
+import com.revrobotics.spark.config.MAXMotionConfig;
+import com.revrobotics.spark.config.SparkBaseConfig;
+import com.revrobotics.spark.config.SparkMaxConfig;
 
 import edu.wpi.first.networktables.NetworkTableEvent;
 
@@ -15,7 +17,6 @@ import edu.wpi.first.networktables.NetworkTableEvent;
  * This class lets us configure PIDs using our units that make sense.  The input units should be 
  * something like meters or degrees, and the output would be in volts, with max as 12V.
  */
-@SuppressWarnings("removal")
 public class PidConstants {
     private String key;
 
@@ -172,30 +173,6 @@ public class PidConstants {
     }
 
     /**
-     * Configure a TalonFX (aka Falcon or Kraken) with this PID constants
-     * @param motor Motor to configure
-     */
-    public void configureMotor(TalonFX motor) {
-        //TODO Implement conversion from CTRE unit to sane units...  Should be 1023/12 / scaleFactor
-        loadFromNT();
-        TalonFXConfiguration allConfigs = new TalonFXConfiguration();
-        motor.getAllConfigs(allConfigs);
-        allConfigs.slot0.kP = kP ;
-        allConfigs.slot0.kI = kI;
-        allConfigs.slot0.kD = kD;
-        allConfigs.slot0.kF = kF;
-
-        allConfigs.slot0.integralZone = kiZone;
-        allConfigs.slot0.allowableClosedloopError = kiError;
-
-        //these use the velocity units, which are 10x more counts vs distance (units/100us)
-        allConfigs.motionCruiseVelocity = kVelMax;
-        allConfigs.motionAcceleration = kAccelMax;
-
-        motor.configAllSettings(allConfigs);
-    }
-
-    /**
      * Configure a TalonSRX speed controller with this PID constants
      * @param motor Motor to configure
      */
@@ -224,20 +201,21 @@ public class PidConstants {
      * @param motor Motor to configure
      * @return PID controller to command with PID
      */
-    public SparkMaxPIDController configureMotor(CANSparkMax motor) {
+    public SparkBaseConfig configureMotor(SparkMax motor) {
         loadFromNT();
-        SparkMaxPIDController pid = motor.getPIDController();
-        pid.setP(kP);
-        pid.setI(kI);
-        pid.setD(kD);
-        pid.setFF(kF);
 
-        pid.setIZone(kiZone);
-        pid.setSmartMotionAllowedClosedLoopError(kiError, 0);
-
-        pid.setSmartMotionMaxVelocity(kVelMax, 0);
-        pid.setSmartMotionMaxAccel(kAccelMax,0);
-
-        return pid;
+        
+        MAXMotionConfig maxConfig = new MAXMotionConfig()
+                    .maxAcceleration(kAccelMax)
+                    .maxVelocity(kVelMax);
+        ClosedLoopConfig loopConfig = new ClosedLoopConfig()
+                    .pidf(kP, kI, kD, kF)
+                    .iZone(kiZone)
+                    .iMaxAccum(kiError)
+                    .apply(maxConfig);
+        SparkBaseConfig config = new SparkMaxConfig().apply(loopConfig);
+        
+        motor.configure(config, SparkBase.ResetMode.kNoResetSafeParameters, SparkBase.PersistMode.kPersistParameters);
+        return config;
     }
 }
