@@ -14,7 +14,5 @@ Standard units:
 
 Robot logging is on by default, we use standard [WpiLog](https://docs.wpilib.org/en/stable/docs/software/telemetry/datalog.html) files from WpiLib.  To access the logs, insert a flash drive and they log automatically on there, or use Advantage Scope or the WpiLib Data Log Tool to get them off the robot.  The path should be /home/lvuser.  A standard SSH/SCP tool will work too, the username is lvuser, no password.
 
-Notes:
-We require both Phoenix libraries 5 and 6 for the robot.  5 is needed for older CTRE device support like the TalonSrx module.
-
-We had to add a bunch of @SuppressWarnings("removal") to some of the legacy interfaces, as it looks like some of the CanSparkMax and TalonFX objects are changing for 2025.  It is do we want to use the new libraries, or use what we know works?
+Differences from standard projects:
+* Most teams have seperate folders for subsystems and commands.  Instead, we put all things related to the subsystem (both commands and subsystems) in the same folder, so it's easy to see what code is designed to work together.

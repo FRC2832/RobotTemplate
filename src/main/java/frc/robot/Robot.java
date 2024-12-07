@@ -113,7 +113,9 @@ public class Robot extends TimedRobot {
         // this line or comment it out.
         if (m_autonomousCommand != null) {
             m_autonomousCommand.cancel();
-        }
+        } else {
+            CommandScheduler.getInstance().cancelAll();
+		}
 
         //this clears all the old polled triggers
         CommandScheduler.getInstance().getActiveButtonLoop().clear();
