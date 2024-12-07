@@ -1,5 +1,7 @@
 package org.livoniawarriors;
 
+//Disabling for now to make 2025 compile.  Might be replaced with AdvantageKit
+/*
 import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -15,11 +17,8 @@ import com.ctre.phoenix.sensors.BasePigeon;
 import com.ctre.phoenix.sensors.CANCoder;
 import com.ctre.phoenix.sensors.CANCoderFaults;
 import com.ctre.phoenix.sensors.CANCoderStickyFaults;
-import com.ctre.phoenix.sensors.Pigeon2;
-import com.ctre.phoenix.sensors.Pigeon2_Faults;
 import com.ctre.phoenix.sensors.PigeonIMU;
 import com.ctre.phoenix.sensors.PigeonIMU_Faults;
-import com.revrobotics.CANSparkMax;
 
 import edu.wpi.first.networktables.BooleanPublisher;
 import edu.wpi.first.networktables.NetworkTable;
@@ -34,9 +33,16 @@ import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import frc.robot.Robot;
+*/
 
-@SuppressWarnings("removal")
 public class Logger implements Runnable {
+
+    @Override
+    public void run() {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'run'");
+    }
+    /*
     private final double VOLTS_PER_PSI = 1.931/100; //2.431V at 100psi
 
     private static HashMap<String,Object> items = new HashMap<String,Object>();
@@ -425,4 +431,5 @@ public class Logger implements Runnable {
     public static boolean StickyFaultSet() {
         return sfaultSet;
     }
+        */
 }

@@ -1,17 +1,17 @@
 package org.livoniawarriors.odometry;
 
-import org.livoniawarriors.swerve.SwerveDriveTrain;
+import org.livoniawarriors.swerve.ISwerveDriveIo;
 
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.wpilibj.TimedRobot;
 
 public class SimSwerveGyro implements IGyroHardware {
-    private SwerveDriveTrain swerve;
+    private ISwerveDriveIo swerve;
     private double chassisAngle;
     private double accelX, accelY;
     private ChassisSpeeds lastSpeeds;
 
-    public SimSwerveGyro(SwerveDriveTrain swerve) {
+    public SimSwerveGyro(ISwerveDriveIo swerve) {
         this.swerve = swerve;
         chassisAngle = 0;
         accelX = 0;

@@ -28,7 +28,7 @@ public class DriveXbox extends Command {
 
     @Override
     public void initialize() {
-        drive.SwerveDrive(0, 0, 0, false);
+        drive.SwerveDrive(0., 0., 0., false);
     }
 
     @Override

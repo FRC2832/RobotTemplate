@@ -1,12 +1,25 @@
 package org.livoniawarriors.odometry;
 
-import com.ctre.phoenix.sensors.Pigeon2;
+import java.util.Arrays;
+import java.util.List;
 
-@SuppressWarnings("removal")
+import com.ctre.phoenix6.StatusSignal;
+import com.ctre.phoenix6.hardware.Pigeon2;
+
+import edu.wpi.first.units.measure.Angle;
+import edu.wpi.first.units.measure.LinearAcceleration;
+
 public class Pigeon2Gyro implements IGyroHardware {
     private Pigeon2 pigeon;
-    private double[] ypr_deg;
-    private double[] xyz_mps;
+
+    StatusSignal<LinearAcceleration> accelX;
+    StatusSignal<LinearAcceleration> accelY;
+    StatusSignal<LinearAcceleration> accelZ;
+    StatusSignal<Angle> yaw;
+    StatusSignal<Angle> pitch;
+    StatusSignal<Angle> roll;
+    
+    List<StatusSignal<?>> allSignals;
 
     public Pigeon2Gyro(int id) {
         this(id, null);
@@ -18,48 +31,56 @@ public class Pigeon2Gyro implements IGyroHardware {
         } else {
             pigeon = new Pigeon2(id);
         }
-        ypr_deg = new double[3];
-        xyz_mps = new double[3];
+
+        //get all our signal grabbers
+        accelX = pigeon.getAccelerationX();
+        accelY = pigeon.getAccelerationY();
+        accelZ = pigeon.getAccelerationZ();
+        yaw = pigeon.getYaw();
+        pitch = pigeon.getPitch();
+        roll = pigeon.getRoll();
+        allSignals = Arrays.asList(accelX, accelY, accelZ, yaw, pitch, roll);
+
+        //set the optimum rates for our signals
+        for (StatusSignal<?> signal : allSignals) {
+            //we run at 50Hz (20ms loops), so no need to grab the data faster
+            signal.setUpdateFrequency(50);
+        }
+        pigeon.optimizeBusUtilization();
     }
 
     @Override
     public void updateHardware() {
-        short[] temp = new short[3];
-        pigeon.getYawPitchRoll(ypr_deg);
-        pigeon.getBiasedAccelerometer(temp);
-
-        for(int i=0; i<3; i++) {
-            xyz_mps[i] = ((double)temp[i])/16384;
-        }
+        //no need to update anymore, as the StatusSignals will auto update and cache values
     }
 
     @Override
     public double getGyroAngle() {
-        return ypr_deg[0];
+        return yaw.getValueAsDouble();
     }
 
     @Override
     public double getPitchAngle() {
-        return ypr_deg[1];
+        return pitch.getValueAsDouble();
     }
 
     @Override
     public double getRollAngle() {
-        return ypr_deg[2];
+        return roll.getValueAsDouble();
     }
 
     @Override
     public double getXAccel() {
-        return xyz_mps[0];
+        return accelX.getValueAsDouble();
     }
 
     @Override
     public double getYAccel() {
-        return xyz_mps[1];
+        return accelY.getValueAsDouble();
     }
 
     @Override
     public double getZAccel() {
-        return xyz_mps[2];
+        return accelZ.getValueAsDouble();
     }
 }

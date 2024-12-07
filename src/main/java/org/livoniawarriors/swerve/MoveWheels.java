@@ -7,10 +7,10 @@ import edu.wpi.first.math.kinematics.SwerveModuleState;
 import edu.wpi.first.wpilibj2.command.Command;
 
 public class MoveWheels extends Command {
-    private SwerveDriveTrain drive;
+    private ISwerveDriveIo drive;
     private SwerveModuleState[] states;
 
-    public MoveWheels(SwerveDriveTrain drive, SwerveModuleState[] states) {
+    public MoveWheels(ISwerveDriveIo drive, SwerveModuleState[] states) {
         this.drive = drive;
         this.states = states;
         addRequirements(drive);
@@ -41,7 +41,7 @@ public class MoveWheels extends Command {
 
     @Override
     public void end(boolean interrupted) {
-        drive.stopWheels();
+        drive.SwerveDrive(0,0,0);
     }
 
     public static SwerveModuleState[] WheelsStraight() {

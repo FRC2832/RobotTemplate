@@ -5,7 +5,7 @@
 package frc.robot;
 
 import org.livoniawarriors.GitVersion;
-import org.livoniawarriors.Logger;
+//import org.livoniawarriors.Logger;
 
 import com.pathplanner.lib.util.PPLibTelemetry;
 
@@ -25,7 +25,7 @@ import edu.wpi.first.wpilibj2.command.CommandScheduler;
 public class Robot extends TimedRobot {
     private Command m_autonomousCommand;
     private RobotContainer m_robotContainer;
-    private Logger logger;
+    //private Logger logger;
 
     /**
      * This function is run when the robot is first started up and should be used for any
@@ -37,8 +37,8 @@ public class Robot extends TimedRobot {
         GitVersion.loadVersion().printVersions();
 
         //internal logger class
-        logger = new Logger();
-        Logger.RegisterLoopTimes(this);
+        //logger = new Logger();
+        //Logger.RegisterLoopTimes(this);
         SmartDashboard.putData(CommandScheduler.getInstance());
 
         /* This is a fix from 2023 with a Rio2.  We took a very hard hit and the Rio went into brownout
@@ -64,7 +64,7 @@ public class Robot extends TimedRobot {
         m_robotContainer.configureBindings();
 
         //start logging class after all the subsystems have initialized
-        logger.start();
+        //logger.start();
     }
 
     /**

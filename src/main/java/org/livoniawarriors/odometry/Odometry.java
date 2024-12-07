@@ -2,9 +2,8 @@ package org.livoniawarriors.odometry;
 
 import java.util.Optional;
 
-import org.livoniawarriors.Logger;
 import org.livoniawarriors.UtilFunctions;
-import org.livoniawarriors.swerve.SwerveDriveTrain;
+import org.livoniawarriors.swerve.ISwerveDriveIo;
 
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.VecBuilder;
@@ -31,7 +30,7 @@ public class Odometry extends SubsystemBase {
     double lastVisionTime;
     SwerveDriveOdometry odometry;
     SwerveDrivePoseEstimator poseEstimator;
-    SwerveDriveTrain drive;
+    ISwerveDriveIo drive;
     Pose2d robotPose;
     Pose2d startPose;
     
@@ -52,15 +51,17 @@ public class Odometry extends SubsystemBase {
         plotCorners = UtilFunctions.getSettingSub("/Odometry/Plot Swerve Corners", false);
 
         SmartDashboard.putData("Field", field);
+        /*
         Logger.RegisterSensor("Gyro Yaw", this::getGyroAngle);
         Logger.RegisterSensor("Gyro Pitch", this::getGyroPitch);
         Logger.RegisterSensor("Gyro Roll", this::getGyroRoll);
         Logger.RegisterSensor("Gyro X Accel", hardware::getXAccel);
         Logger.RegisterSensor("Gyro Y Accel", hardware::getYAccel);
         Logger.RegisterSensor("Gyro Z Accel", hardware::getZAccel);
+        */
     }
 
-    public void setSwerveDrive(SwerveDriveTrain drive) {
+    public void setSwerveDrive(ISwerveDriveIo drive) {
         this.drive = drive;
         swervePositions = drive.getCornerLocations();
         odometry = new SwerveDriveOdometry(
