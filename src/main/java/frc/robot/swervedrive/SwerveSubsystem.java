@@ -473,10 +473,14 @@ public class SwerveSubsystem extends SubsystemBase
   public Command driveCommand(DoubleSupplier translationX, DoubleSupplier translationY, DoubleSupplier angularRotationX)
   {
     return run(() -> {
+      double redFlip = 1;
+      if (isRedAlliance()) {
+        redFlip = -1;
+      }
       // Make the robot move
       swerveDrive.drive(SwerveMath.scaleTranslation(new Translation2d(
-                            translationX.getAsDouble() * swerveDrive.getMaximumVelocity(),
-                            translationY.getAsDouble() * swerveDrive.getMaximumVelocity()), 0.8),
+                            translationX.getAsDouble() * swerveDrive.getMaximumVelocity() * redFlip,
+                            translationY.getAsDouble() * swerveDrive.getMaximumVelocity() * redFlip), 0.8),
                         Math.pow(angularRotationX.getAsDouble(), 3) * swerveDrive.getMaximumAngularVelocity(),
                         true,
                         false);
@@ -499,7 +503,11 @@ public class SwerveSubsystem extends SubsystemBase
    */
   public void drive(Translation2d translation, double rotation, boolean fieldRelative)
   {
-    swerveDrive.drive(translation,
+    double redFlip = 1;
+    if (isRedAlliance()) {
+      redFlip = -1;
+    }
+    swerveDrive.drive(translation.times(redFlip),
                       rotation,
                       fieldRelative,
                       false); // Open loop is disabled since it shouldn't be used most of the time.
