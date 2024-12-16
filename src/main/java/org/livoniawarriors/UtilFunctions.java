@@ -249,6 +249,7 @@ public class UtilFunctions {
      * @param offsetSeconds What offset to run this function at
      * @return
      */
+    @SuppressWarnings("resource")
     public static boolean addPeriodic(Runnable callback, double periodSeconds, double offsetSeconds) {
         try {
             Field field = RobotBase.class.getDeclaredField("m_robotCopy");
