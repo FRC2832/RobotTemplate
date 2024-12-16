@@ -10,16 +10,15 @@ import org.livoniawarriors.leds.LedSubsystem;
 import org.livoniawarriors.leds.LightningFlash;
 import org.livoniawarriors.leds.RainbowLeds;
 import org.livoniawarriors.leds.TestLeds;
-import org.livoniawarriors.odometry.Odometry;
-import org.livoniawarriors.odometry.Pigeon2Gyro;
-import org.livoniawarriors.odometry.SimSwerveGyro;
-import org.livoniawarriors.swerve.DriveXbox;
-import org.livoniawarriors.swerve.MoveWheels;
 
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.auto.NamedCommands;
 
 import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.math.VecBuilder;
+import edu.wpi.first.math.geometry.Rotation3d;
+import edu.wpi.first.math.geometry.Translation3d;
+import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.Filesystem;
 import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.XboxController;
@@ -30,6 +29,8 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.swervedrive.SwerveSubsystem;
+import frc.robot.vision.AprilTagCamera;
+import frc.robot.vision.Vision;
 
 /**
  * This class is where the bulk of the robot should be declared. Since Command-based is a
@@ -41,6 +42,7 @@ public class RobotContainer {
     /** The container for the robot. Contains subsystems, OI devices, and commands. */
     private SwerveSubsystem swerveDrive;
     private LedSubsystem leds;
+    private Vision vision;
 
     private XboxController driverController;
 
@@ -58,8 +60,14 @@ public class RobotContainer {
         String swerveDirectory = "swerve/infinity";
         //subsystems used in all robots
         swerveDrive = new SwerveSubsystem(new File(Filesystem.getDeployDirectory(), swerveDirectory));
-        swerveDrive.setupPathPlanner();
         leds = new LedSubsystem(0, 10);
+        vision = new Vision(swerveDrive);
+        vision.addCamera(new AprilTagCamera("left",
+             new Rotation3d(0, Math.toRadians(-24.094), Math.toRadians(30)),
+             new Translation3d(Units.inchesToMeters(12.056),
+                               Units.inchesToMeters(10.981),
+                               Units.inchesToMeters(8.44)),
+             VecBuilder.fill(4, 4, 8), VecBuilder.fill(0.5, 0.5, 1)));
 
         //add some buttons to press for development
         /*
