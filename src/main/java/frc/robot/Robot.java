@@ -9,6 +9,7 @@ import org.livoniawarriors.GitVersion;
 
 import com.pathplanner.lib.util.PPLibTelemetry;
 
+import edu.wpi.first.wpilibj.DataLogManager;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.TimedRobot;
@@ -31,8 +32,10 @@ public class Robot extends TimedRobot {
      * This function is run when the robot is first started up and should be used for any
      * initialization code.
      */
-    @Override
-    public void robotInit() {
+    public Robot() {
+        //start logging to WpiLog file
+        DataLogManager.start();
+
         //display the Git info for the build in the network tables
         GitVersion.loadVersion().printVersions();
 
