@@ -8,6 +8,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import org.littletonrobotics.junction.AutoLogOutput;
+import org.littletonrobotics.junction.AutoLogOutputManager;
 import org.photonvision.EstimatedRobotPose;
 import org.photonvision.PhotonCamera;
 import org.photonvision.PhotonPoseEstimator;
@@ -75,8 +77,10 @@ public class AprilTagCamera {
     /**
      * Last read from the camera timestamp to prevent lag due to slow data fetches.
      */
+    @AutoLogOutput(key = "Camera {name}/lastReadTimestamp")
     private       double                       lastReadTimestamp = Microseconds.of(NetworkTablesJNI.now()).in(Seconds);
-
+    @SuppressWarnings("unused")
+    private final String name;
     /**
      * Construct a Photon Camera class with help. Standard deviations are fake values, experiment and determine
      * estimation noise on an actual robot.
@@ -90,6 +94,8 @@ public class AprilTagCamera {
     public AprilTagCamera(String name, Rotation3d robotToCamRotation, Translation3d robotToCamTranslation,
             Matrix<N3, N1> singleTagStdDevs, Matrix<N3, N1> multiTagStdDevsMatrix)
     {
+      this.name = name;
+      AutoLogOutputManager.addObject(this);
       latencyAlert = new Alert("'" + name + "' Camera is experiencing high latency.", AlertType.kWarning);
 
       camera = new PhotonCamera(name);
