@@ -135,17 +135,17 @@ public class Vision extends SubsystemBase
     Optional<EstimatedRobotPose> poseEst = camera.getEstimatedGlobalPose();
     if (Robot.isSimulation())
     {
-      Field2d debugField = visionSim.getDebugField();
-      // Uncomment to enable outputting of vision targets in sim.
-      poseEst.ifPresentOrElse(
-          est ->
-              debugField
-                  .getObject("VisionEstimation")
-                  .setPose(est.estimatedPose.toPose2d()),
-          () -> {
-            debugField.getObject("VisionEstimation").setPoses();
-          });
-    }
+      //Field2d debugField = visionSim.getDebugField();
+      // Uncomment to enable outputting of vision position estimates in sim.
+      //poseEst.ifPresentOrElse(
+      //    est ->
+      //        debugField
+      //            .getObject("VisionEstimation")
+      //            .setPose(est.estimatedPose.toPose2d()),
+      //    () -> {
+      //      debugField.getObject("VisionEstimation").setPoses();
+      //    });
+    }//
     return poseEst;
   }
 
