@@ -109,7 +109,7 @@ public class Vision extends SubsystemBase
     }
     for (AprilTagCamera c : cameras)
     {
-      Optional<EstimatedRobotPose> poseEst = getEstimatedGlobalPose(c);
+      Optional<EstimatedRobotPose> poseEst = updateCamera(c);
       if (poseEst.isPresent())
       {
         var pose = poseEst.get();
@@ -130,9 +130,9 @@ public class Vision extends SubsystemBase
    *
    * @return an {@link EstimatedRobotPose} with an estimated pose, timestamp, and targets used to create the estimate
    */
-  public Optional<EstimatedRobotPose> getEstimatedGlobalPose(AprilTagCamera camera)
+  public Optional<EstimatedRobotPose> updateCamera(AprilTagCamera camera)
   {
-    Optional<EstimatedRobotPose> poseEst = camera.getEstimatedGlobalPose();
+    Optional<EstimatedRobotPose> poseEst = camera.updateCamera();
     if (Robot.isSimulation())
     {
       //Field2d debugField = visionSim.getDebugField();

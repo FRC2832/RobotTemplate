@@ -5,6 +5,7 @@ import static edu.wpi.first.units.Units.Milliseconds;
 import static edu.wpi.first.units.Units.Seconds;
 
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Optional;
 
@@ -28,16 +29,30 @@ import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
+import edu.wpi.first.networktables.IntegerSubscriber;
+import edu.wpi.first.networktables.NetworkTableEvent;
+import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.NetworkTablesJNI;
+import edu.wpi.first.units.measure.Time;
 import edu.wpi.first.wpilibj.Alert;
 import edu.wpi.first.wpilibj.Alert.AlertType;
 import frc.robot.Robot;
 
 public class AprilTagCamera {
+    public static final Time MAX_LATENCY = Milliseconds.of(250);
+    public static final Time RUNNING_DISCONECT_TIME = Seconds.of(5);
+    public static final Time STARTUP_DISCONECT_TIME = Seconds.of(30);
+
     /**
      * Latency alert to use when high latency is detected.
      */
     public final  Alert                        latencyAlert;
+
+    /**
+     * Latency alert to use when camera is disconnected.
+     */
+    public final  Alert                        disconnectAlert;
+
     /**
      * Camera instance for comms.
      */
@@ -79,8 +94,17 @@ public class AprilTagCamera {
      */
     @AutoLogOutput(key = "Camera {name}/lastReadTimestamp")
     private       double                       lastReadTimestamp = Microseconds.of(NetworkTablesJNI.now()).in(Seconds);
+
     @SuppressWarnings("unused")
     private final String name;
+
+    private IntegerSubscriber heartbeatSub;
+    private double lastHeartbeatTimestamp;
+
+    //this is needed to save the result of the listener so we don't lose the handle
+    @SuppressWarnings("unused")
+    private int heartbeatHandle;
+
     /**
      * Construct a Photon Camera class with help. Standard deviations are fake values, experiment and determine
      * estimation noise on an actual robot.
@@ -96,7 +120,10 @@ public class AprilTagCamera {
     {
       this.name = name;
       AutoLogOutputManager.addObject(this);
+
       latencyAlert = new Alert("'" + name + "' Camera is experiencing high latency.", AlertType.kWarning);
+      disconnectAlert = new Alert("'" + name + "' Camera is disconnected.", AlertType.kError);
+      lastHeartbeatTimestamp = -1;
 
       camera = new PhotonCamera(name);
 
@@ -114,6 +141,15 @@ public class AprilTagCamera {
       this.singleTagStdDevs = singleTagStdDevs;
       this.multiTagStdDevs = multiTagStdDevsMatrix;
 
+      // add a listener to listen for heartbeat changes
+      heartbeatSub = camera.getCameraTable().getIntegerTopic("heartbeat").subscribe(0);
+      heartbeatHandle = NetworkTableInstance.getDefault().addListener(
+        heartbeatSub,
+        EnumSet.of(NetworkTableEvent.Kind.kValueAll),
+        event -> {
+          lastHeartbeatTimestamp = Microseconds.of(NetworkTablesJNI.now()).in(Seconds);
+        });
+      
       if (Robot.isSimulation())
       {
         SimCameraProperties cameraProp = new SimCameraProperties();
@@ -124,6 +160,7 @@ public class AprilTagCamera {
         // Set the camera image capture framerate (Note: this is limited by robot loop rate).
         cameraProp.setFPS(60);
         // The average and standard deviation in milliseconds of image data latency.
+        //these have been lowered from 35 to stop flickering as the camera is only rendered on new images
         cameraProp.setAvgLatencyMs(14);
         cameraProp.setLatencyStdDevMs(5);
 
@@ -189,11 +226,27 @@ public class AprilTagCamera {
      *
      * @return Estimated pose.
      */
-    public Optional<EstimatedRobotPose> getEstimatedGlobalPose()
+    public Optional<EstimatedRobotPose> updateCamera()
     {
+      //timeout alerts
+      Time currentTime = Microseconds.of(NetworkTablesJNI.now());
+      //check for startup timeout
+      if (lastHeartbeatTimestamp < 0 && currentTime.gt(STARTUP_DISCONECT_TIME)) {
+        disconnectAlert.set(true);
+      }
+      //check for running timeout
+      else if (lastHeartbeatTimestamp > 0 && (Seconds.of(lastHeartbeatTimestamp).plus(RUNNING_DISCONECT_TIME)).lt(currentTime)) {
+        disconnectAlert.set(true);
+      }
+      else {
+        disconnectAlert.set(false);
+      }
+
+      //check pose
       updateUnreadResults();
       return estimatedRobotPose;
     }
+
 
     /**
      * Update the latest results, cached with a maximum refresh rate of 1req/15ms. Sorts the list by timestamp.
@@ -239,6 +292,13 @@ public class AprilTagCamera {
       {
         visionEst = poseEstimator.update(change);
         updateEstimationStdDevs(visionEst, change.getTargets());
+
+        //check if the camera is lagging
+        if (change.metadata.getLatencyMillis() > MAX_LATENCY.in(Milliseconds)) {
+          latencyAlert.set(true);
+        } else {
+          latencyAlert.set(false);
+        }
       }
       estimatedRobotPose = visionEst;
     }
@@ -306,5 +366,16 @@ public class AprilTagCamera {
           curStdDevs = estStdDevs;
         }
       }
+    }
+
+    @AutoLogOutput(key = "Camera {name}/hasTarget")
+    public boolean hasTarget() {
+      return !resultsList.isEmpty();
+    }
+
+    @AutoLogOutput(key = "Camera {name}/isConnected")
+    public boolean isConnected() {
+      //if we have never seen the camera yet, or if the disconnect alert goes active
+      return !(lastHeartbeatTimestamp < 0 || disconnectAlert.get());
     }
 }

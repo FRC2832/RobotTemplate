@@ -20,7 +20,6 @@ import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.Filesystem;
-import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
@@ -50,12 +49,6 @@ public class RobotContainer {
 
     public RobotContainer() {
         driverController = new XboxController(0);
-
-        String serNum = RobotController.getSerialNumber();
-        SmartDashboard.putString("Serial Number", serNum);
-        //known Rio serial numbers:
-        //031b525b = buzz
-        //03064db7 = big buzz
 
         String swerveDirectory = "swerve/infinity";
         //subsystems used in all robots
