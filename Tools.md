@@ -21,8 +21,10 @@ https://apps.microsoft.com/detail/9NQBKB5DW909
 * [WpiLib](https://docs.wpilib.org/en/stable/index.html)
 * [PhotonVision](https://docs.photonvision.org/en/latest/)
 * [PathPlanner](https://github.com/mjansen4857/pathplanner)
-* [CTRE V5](https://v5.docs.ctr-electronics.com/en/stable/)
+* [CTRE](https://v6.docs.ctr-electronics.com/en/stable/index.html)
 * [Rev](https://docs.revrobotics.com/docs/)
+* [YAGSL](https://docs.yagsl.com/)
+* [AdvantageKit](https://docs.advantagekit.org/)
 
 # Team Onboarding Steps:
 * Create GitHub account
